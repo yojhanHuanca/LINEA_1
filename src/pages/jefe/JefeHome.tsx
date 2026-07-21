@@ -505,6 +505,7 @@ function CountdownCard({ days, isVerification }: { days: number; isVerification:
 /* ─── Extension modal ─── */
 function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () => void; caseId: string }) {
   const s = useStore();
+  const c = s.getCase(caseId);
   const [motivo, setMotivo] = useState("");
   const [justificacion, setJustificacion] = useState("");
   const [nuevaFecha, setNuevaFecha] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
@@ -533,7 +534,7 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
       open={open}
       onClose={onClose}
       title="Solicitar ampliación de plazo"
-      subtitle={`${caseId} · complete los campos obligatorios`}
+      subtitle="Para el Plan de Acción asignado"
       size="lg"
       footer={
         <>
@@ -543,15 +544,33 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
       }
     >
       <div className="space-y-4">
+        {/* Contexto del caso */}
+        <div className="rounded-xl bg-surface border border-line p-4">
+          <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint mb-2">Plan de Acción al que solicita ampliación</p>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className="font-mono text-[13px] font-bold text-brand-700">{caseId}</span>
+            {c && <span className="text-[12.5px] text-ink-soft">·</span>}
+            {c && <span className="text-[12.5px] text-ink-soft truncate">{c.title}</span>}
+          </div>
+          {c?.actionPlan && (
+            <div className="mt-2 pt-2 border-t border-line-soft grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
+              <div><span className="text-ink-faint">Fecha límite actual:</span> <span className="text-ink font-medium">{formatDate(c.slaDueDate)}</span></div>
+              <div><span className="text-ink-faint">Días restantes:</span> <span className="text-ink font-medium">{Math.max(0, Math.ceil((new Date(c.slaDueDate).getTime() - Date.now()) / 86400000))} días</span></div>
+              <div><span className="text-ink-faint">Actividades:</span> <span className="text-ink font-medium">{c.actionPlan.items.length}</span></div>
+              <div><span className="text-ink-faint">Avance:</span> <span className="text-ink font-medium">{c.execution?.progress ?? 0}%</span></div>
+            </div>
+          )}
+        </div>
+
         <div className="rounded-lg bg-info-soft border border-info/20 p-3.5 flex items-start gap-2.5">
           <Mail className="h-4 w-4 text-info-ink shrink-0 mt-0.5" />
           <p className="text-[12.5px] text-info-ink">La solicitud se notificará a Seguridad Operativa y se enviará un correo. Quedará registrada en el historial del expediente.</p>
         </div>
         <Field label="Motivo de la solicitud" required>
-          <Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Razón principal de la ampliación…" />
+          <Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Razón principal por la que necesita más tiempo para ejecutar el plan…" />
         </Field>
         <Field label="Justificación" required>
-          <Textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} placeholder="Justifique detalladamente por qué necesita más tiempo…" />
+          <Textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} placeholder="Justifique detalladamente por qué no podrá completar el plan en el plazo asignado…" />
         </Field>
         <Field label="Nueva fecha propuesta" required>
           <Input type="date" value={nuevaFecha} onChange={(e) => setNuevaFecha(e.target.value)} />

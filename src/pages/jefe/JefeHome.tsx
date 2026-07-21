@@ -44,14 +44,15 @@ import {
   EVENT_LABELS,
   PRIORITY_LABELS,
   type ActionItem,
+  type CaseFile,
   type Evidence,
   type Priority,
 } from "@/lib/types";
 import { cn, formatDate, formatDateTime, relativeTime, daysUntil, uid } from "@/lib/utils";
 
 export function JefeHome() {
-  const store = useStore();
-  const { cases, currentUser } = store();
+  const s = useStore();
+  const { cases, currentUser } = s;
 
   // Casos asignados al jefe (mantenimiento, en ejecución o verificación)
   const myCases = useMemo(
@@ -61,7 +62,7 @@ export function JefeHome() {
     [cases]
   );
 
-  const activeCase = myCases.find((c) => c.stage === "ejecucion") ?? myCases[0];
+  const activeCase: CaseFile | undefined = myCases.find((c) => c.stage === "ejecucion") ?? myCases[0];
 
   if (!activeCase) {
     return (
@@ -73,19 +74,14 @@ export function JefeHome() {
 
   return (
     <JefeShell>
-      <PlanExecutionView caseId={activeCase.id} />
+      <PlanExecutionView caseId={activeCase.id} s={s} />
     </JefeShell>
   );
 }
 
-// wrapper porque useStore ya está en JefeHome
-function store() {
-  return useStore();
-}
-
 /* ─── Sin plan asignado ─── */
 function NoPlanAssigned() {
-  const { currentUser } = store();
+  const { currentUser } = useStore();
   return (
     <div className="max-w-3xl mx-auto">
       <div className="rounded-2xl bg-brand-gradient text-white p-8 relative overflow-hidden">
@@ -123,8 +119,7 @@ function NoPlanAssigned() {
 }
 
 /* ─── Vista principal de ejecución ─── */
-function PlanExecutionView({ caseId }: { caseId: string }) {
-  const s = store();
+function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof useStore> }) {
   const c = s.getCase(caseId);
   const [extOpen, setExtOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
@@ -554,7 +549,7 @@ function CountdownCard({ days, isVerification }: { days: number; isVerification:
 
 /* ─── Extension modal ─── */
 function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () => void; caseId: string }) {
-  const s = store();
+  const s = useStore();
   const [motivo, setMotivo] = useState("");
   const [justificacion, setJustificacion] = useState("");
   const [nuevaFecha, setNuevaFecha] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
@@ -635,7 +630,7 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
 
 /* ─── Panel lateral: registro de avances por actividad ─── */
 function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: ActionItem; onClose: () => void }) {
-  const s = store();
+  const s = useStore();
   const [progress, setProgress] = useState(item.progress);
   const [comment, setComment] = useState("");
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));

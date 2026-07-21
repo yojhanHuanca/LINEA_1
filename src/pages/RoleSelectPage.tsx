@@ -8,9 +8,9 @@ export function RoleSelectPage() {
   const navigate = useNavigate();
   const { setRole } = useStore();
 
-  const enter = (role: "reportante" | "seguridad") => {
+  const enter = (role: "reportante" | "seguridad" | "jefe") => {
     setRole(role);
-    navigate(role === "reportante" ? "/reportante" : "/seguridad");
+    navigate(role === "reportante" ? "/reportante" : role === "jefe" ? "/jefe" : "/seguridad");
   };
 
   return (

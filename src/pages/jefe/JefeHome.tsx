@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Rocket,
   FileText,
@@ -19,7 +18,6 @@ import {
   Video,
   Paperclip,
   ChevronRight,
-  AlertTriangle,
   CheckCircle2,
   Activity,
   ClipboardList,
@@ -33,11 +31,10 @@ import { useStore } from "@/lib/store";
 import { JefeShell } from "@/design-system/layout/JefeShell";
 import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
-import { Field, Input, Select, Textarea } from "@/design-system/primitives/Input";
+import { Field, Input, Textarea } from "@/design-system/primitives/Input";
 import { Modal } from "@/design-system/primitives/Modal";
 import { Pill, PriorityPill } from "@/design-system/primitives/Pill";
-import { Progress } from "@/design-system/primitives/Progress";
-import { EmptyState } from "@/design-system/primitives/Progress";
+import { Progress, EmptyState } from "@/design-system/primitives/Progress";
 import {
   AREA_HEADS,
   AREA_LABELS,
@@ -46,16 +43,14 @@ import {
   type ActionItem,
   type CaseFile,
   type Evidence,
-  type Priority,
 } from "@/lib/types";
-import { cn, formatDate, formatDateTime, relativeTime, daysUntil, uid } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, relativeTime, daysUntil } from "@/lib/utils";
 
 export function JefeHome() {
   const s = useStore();
   const { cases, currentUser } = s;
 
   // Casos asignados al jefe: cualquier caso en ejecucion/verificacion asignado a mantenimiento
-  // o cuyo assignee sea el jefe actual
   const myCases = useMemo(
     () => cases.filter(
       (c) => (c.stage === "ejecucion" || c.stage === "verificacion") &&
@@ -66,17 +61,13 @@ export function JefeHome() {
 
   const activeCase: CaseFile | undefined = myCases.find((c) => c.stage === "ejecucion") ?? myCases[0];
 
-  if (!activeCase) {
-    return (
-      <JefeShell>
-        <NoPlanAssigned />
-      </JefeShell>
-    );
-  }
-
   return (
     <JefeShell>
-      <PlanExecutionView caseId={activeCase.id} s={s} />
+      {activeCase ? (
+        <PlanExecutionView c={activeCase} s={s} />
+      ) : (
+        <NoPlanAssigned />
+      )}
     </JefeShell>
   );
 }
@@ -100,7 +91,7 @@ function NoPlanAssigned() {
         title="Sin planes activos"
         description="Cuando Seguridad Operativa apruebe y asigne un Plan de Acción a su área, aparecerá aquí para su ejecución."
       />
-      <div className="mt-6 rounded-xl bg-white border border-line p-5">
+      <Card className="mt-6 p-5">
         <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-3">¿Qué puede hacer aquí?</p>
         <ul className="space-y-2.5">
           {[
@@ -115,19 +106,18 @@ function NoPlanAssigned() {
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }
 
 /* ─── Vista principal de ejecución ─── */
-function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof useStore> }) {
-  const c = s.getCase(caseId);
+function PlanExecutionView({ c, s }: { c: CaseFile; s: ReturnType<typeof useStore> }) {
   const [extOpen, setExtOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
-  if (!c || !c.actionPlan) {
+  if (!c.actionPlan) {
     return <EmptyState icon={<FileText className="h-5 w-5" />} title="Plan no disponible" description="El plan de acción no está disponible." />;
   }
 
@@ -142,7 +132,6 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
   const isVerification = c.stage === "verificacion";
 
   const counts = {
-    actividades: items.length,
     fotos: c.evidence.filter((e) => e.kind === "foto").length,
     videos: c.evidence.filter((e) => e.kind === "video").length,
     documentos: c.evidence.filter((e) => e.kind === "documento").length,
@@ -154,63 +143,43 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
       {/* Banner de bienvenida */}
       <div className="rounded-2xl bg-brand-gradient text-white p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-mesh opacity-70" />
-        <svg className="absolute right-4 bottom-2 opacity-90" width="140" height="70" viewBox="0 0 150 80" fill="none" aria-hidden>
-          <path d="M6 50 Q6 26 30 24 H120 Q144 26 144 50 V64 H6 Z" fill="#fff" />
-          <rect x="16" y="32" width="20" height="14" rx="3" fill="#0F6B3E" opacity="0.85" />
-          <rect x="42" y="32" width="20" height="14" rx="3" fill="#0F6B3E" opacity="0.85" />
-          <rect x="68" y="32" width="20" height="14" rx="3" fill="#0F6B3E" opacity="0.85" />
-          <rect x="94" y="32" width="20" height="14" rx="3" fill="#0F6B3E" opacity="0.85" />
-          <circle cx="38" cy="66" r="7" fill="#0A3F24" />
-          <circle cx="112" cy="66" r="7" fill="#0A3F24" />
-        </svg>
         <div className="relative max-w-2xl">
           <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-white/70">Plan de Acción asignado</p>
-          <h1 className="mt-2 text-[26px] font-bold tracking-tight font-display leading-tight">
-            Ejecute su Plan de Acción
-          </h1>
-          <p className="text-[13.5px] text-white/80 mt-2 max-w-xl">
-            Tiene un plan asignado por Seguridad Operativa. Registre avances, adjunte evidencias y envíe a verificación al finalizar.
-          </p>
+          <h1 className="mt-2 text-[26px] font-bold tracking-tight font-display leading-tight">Ejecute su Plan de Acción</h1>
+          <p className="text-[13.5px] text-white/80 mt-2 max-w-xl">Tiene un plan asignado por Seguridad Operativa. Registre avances, adjunte evidencias y envíe a verificación al finalizar.</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
-            <Pill tone="brand" dot className="bg-white/15 border-white/20 text-white">{c.id}</Pill>
-            <Pill tone="brand" dot className="bg-white/15 border-white/20 text-white">{EVENT_LABELS[c.type]}</Pill>
-            <Pill tone="brand" dot className="bg-white/15 border-white/20 text-white">Área {AREA_LABELS[c.assigneeArea ?? c.area]}</Pill>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-[11.5px] font-medium text-white">{c.id}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-[11.5px] font-medium text-white">{EVENT_LABELS[c.type]}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-[11.5px] font-medium text-white">Área {AREA_LABELS[c.assigneeArea ?? c.area]}</span>
           </div>
         </div>
       </div>
 
-      {/* Tarjeta destacada con countdown */}
+      {/* Tarjeta destacada + countdown */}
       <div className="grid lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="p-5">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="min-w-0">
-                <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Expediente asignado</p>
-                <h2 className="mt-1 text-[18px] font-bold text-ink tracking-tight leading-tight">{c.title}</h2>
-              </div>
-              {isVerification ? (
-                <Pill tone="warning" dot>Pendiente de Verificación</Pill>
-              ) : (
-                <Pill tone="brand" dot>En Ejecución</Pill>
-              )}
+        <Card className="lg:col-span-2 p-5">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Expediente asignado</p>
+              <h2 className="mt-1 text-[18px] font-bold text-ink tracking-tight leading-tight">{c.title}</h2>
             </div>
-
-            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-              <InfoCell icon={<FileText className="h-3.5 w-3.5" />} label="Código" value={c.id} />
-              <InfoCell icon={<Flag className="h-3.5 w-3.5" />} label="Tipo de incidencia" value={EVENT_LABELS[c.type]} />
-              <InfoCell icon={<MapPin className="h-3.5 w-3.5" />} label="Estación" value={c.station} />
-              <InfoCell icon={<Building2 className="h-3.5 w-3.5" />} label="Área responsable" value={AREA_LABELS[c.assigneeArea ?? c.area]} />
-              <InfoCell icon={<User className="h-3.5 w-3.5" />} label="Jefe asignado" value={c.assignee ?? "—"} />
-              <div className="flex items-center gap-2.5">
-                <span className="text-ink-faint"><Flag className="h-3.5 w-3.5" /></span>
-                <div>
-                  <p className="text-[10.5px] text-ink-faint">Prioridad</p>
-                  <div className="mt-0.5"><PriorityPill priority={c.priority} /></div>
-                </div>
+            {isVerification ? <Pill tone="warning" dot>Pendiente de Verificación</Pill> : <Pill tone="brand" dot>En Ejecución</Pill>}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+            <InfoCell icon={<FileText className="h-3.5 w-3.5" />} label="Código" value={c.id} />
+            <InfoCell icon={<Flag className="h-3.5 w-3.5" />} label="Tipo de incidencia" value={EVENT_LABELS[c.type]} />
+            <InfoCell icon={<MapPin className="h-3.5 w-3.5" />} label="Estación" value={c.station} />
+            <InfoCell icon={<Building2 className="h-3.5 w-3.5" />} label="Área responsable" value={AREA_LABELS[c.assigneeArea ?? c.area]} />
+            <InfoCell icon={<User className="h-3.5 w-3.5" />} label="Jefe asignado" value={c.assignee ?? "—"} />
+            <div className="flex items-center gap-2.5">
+              <span className="text-ink-faint"><Flag className="h-3.5 w-3.5" /></span>
+              <div>
+                <p className="text-[10.5px] text-ink-faint">Prioridad</p>
+                <div className="mt-0.5"><PriorityPill priority={c.priority} /></div>
               </div>
-              <InfoCell icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha de asignación" value={formatDate(plan.submittedAt ?? c.createdAt)} />
-              <InfoCell icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha límite" value={formatDate(c.slaDueDate)} />
             </div>
+            <InfoCell icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha de asignación" value={formatDate(plan.submittedAt ?? c.createdAt)} />
+            <InfoCell icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha límite" value={formatDate(c.slaDueDate)} />
           </div>
         </Card>
 
@@ -218,7 +187,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
         <CountdownCard days={days} isVerification={isVerification} />
       </div>
 
-      {/* Barra de progreso general + indicadores */}
+      {/* Barra de progreso general */}
       <Card className="p-5">
         <div className="flex items-end justify-between gap-4 mb-3 flex-wrap">
           <div>
@@ -226,7 +195,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
             <p className="text-[26px] font-bold text-ink tabular-nums leading-none mt-1">{overallProgress}%</p>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            <Indicator label="Actividades" value={counts.actividades} icon={<ClipboardList className="h-4 w-4" />} />
+            <Indicator label="Actividades" value={items.length} icon={<ClipboardList className="h-4 w-4" />} />
             <Indicator label="Completadas" value={completed} icon={<CheckCircle2 className="h-4 w-4" />} tone="brand" />
             <Indicator label="En proceso" value={inProgress} icon={<Activity className="h-4 w-4" />} tone="info" />
             <Indicator label="Comentarios" value={counts.comentarios} icon={<StickyNote className="h-4 w-4" />} />
@@ -235,7 +204,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
         <Progress value={overallProgress} className="h-3" showLabel />
       </Card>
 
-      {/* Plan de Acción + sidebar de acciones */}
+      {/* Plan de Acción + sidebar */}
       <div className="grid lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 space-y-5">
           {/* Plan de Acción */}
@@ -278,7 +247,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
 
           {/* Tabla de actividades */}
           <Card padded={false}>
-            <div className="p-5 border-b border-line-soft flex items-center justify-between gap-3">
+            <div className="p-5 border-b border-line-soft">
               <div className="flex items-center gap-2.5">
                 <div className="h-9 w-9 rounded-lg bg-brand-50 text-brand-700 grid place-items-center"><Activity className="h-4.5 w-4.5" /></div>
                 <div>
@@ -301,8 +270,8 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-soft">
-                  {items.map((it, i) => (
-                    <tr key={it.id} className="hover:bg-surface/40 transition-colors group">
+                  {items.map((it) => (
+                    <tr key={it.id} className="hover:bg-surface/40 transition-colors">
                       <td className="px-4 py-3.5 max-w-[260px]">
                         <p className="text-[13px] font-semibold text-ink truncate">{it.name}</p>
                         {it.description && <p className="text-[11.5px] text-ink-quiet truncate mt-0.5">{it.description}</p>}
@@ -311,10 +280,8 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
                       <td className="px-4 py-3.5"><span className="text-[12px] text-ink-soft tabular-nums">{formatDate(it.startDate)}</span></td>
                       <td className="px-4 py-3.5"><span className="text-[12px] text-ink-soft tabular-nums">{formatDate(it.dueDate)}</span></td>
                       <td className="px-4 py-3.5">
-                        <span className={cn(
-                          "text-[10.5px] font-semibold px-2 py-0.5 rounded-full",
-                          it.status === "completado" ? "bg-brand-50 text-brand-800" : it.status === "en_progreso" ? "bg-info-soft text-info-ink" : "bg-surface-2 text-ink-quiet"
-                        )}>
+                        <span className={cn("text-[10.5px] font-semibold px-2 py-0.5 rounded-full",
+                          it.status === "completado" ? "bg-brand-50 text-brand-800" : it.status === "en_progreso" ? "bg-info-soft text-info-ink" : "bg-surface-2 text-ink-quiet")}>
                           {it.status === "completado" ? "Finalizada" : it.status === "en_progreso" ? "En proceso" : "Pendiente"}
                         </span>
                       </td>
@@ -325,7 +292,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
                         </div>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <Button variant="outline" size="sm" onClick={() => setActiveItem(it.id)} disabled={isVerification}>
+                        <Button variant="outline" size="sm" onClick={() => setActiveItemId(it.id)} disabled={isVerification}>
                           Registrar <ChevronRight className="h-3.5 w-3.5" />
                         </Button>
                       </td>
@@ -336,7 +303,7 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
             </div>
           </Card>
 
-          {/* Timeline de actividades */}
+          {/* Cronograma visual */}
           <Card padded={false}>
             <div className="p-5 border-b border-line-soft">
               <div className="flex items-center gap-2.5">
@@ -356,10 +323,8 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
                     const active = it.status === "en_progreso";
                     return (
                       <div key={it.id} className="relative pl-10">
-                        <div className={cn(
-                          "absolute left-0 top-0.5 h-6 w-6 rounded-full grid place-items-center border-2 border-white shrink-0",
-                          done ? "bg-brand-700 text-white" : active ? "bg-info text-white" : "bg-surface-2 text-ink-faint border-line"
-                        )}>
+                        <div className={cn("absolute left-0 top-0.5 h-6 w-6 rounded-full grid place-items-center border-2 border-white shrink-0",
+                          done ? "bg-brand-700 text-white" : active ? "bg-info text-white" : "bg-surface-2 text-ink-faint border-line")}>
                           {done ? <Check className="h-3 w-3" /> : <span className="text-[10px] font-bold">{i + 1}</span>}
                         </div>
                         <div className="flex items-center justify-between gap-2">
@@ -378,7 +343,6 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
 
         {/* Sidebar de acciones */}
         <div className="space-y-5 lg:sticky lg:top-24">
-          {/* Aceptar plan */}
           {!accepted && !isVerification && (
             <Card className="border-brand-200 bg-brand-50/40">
               <div className="flex items-start gap-3">
@@ -386,15 +350,12 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
                 <div className="flex-1">
                   <p className="text-[13px] font-semibold text-ink">Plan recibido</p>
                   <p className="text-[12px] text-ink-soft mt-0.5 mb-3">Acepte el plan para iniciar la ejecución.</p>
-                  <Button size="sm" className="w-full" onClick={() => s.acceptPlan(c.id)}>
-                    <Check className="h-4 w-4" /> Aceptar Plan
-                  </Button>
+                  <Button size="sm" className="w-full" onClick={() => s.acceptPlan(c.id)}><Check className="h-4 w-4" /> Aceptar Plan</Button>
                 </div>
               </div>
             </Card>
           )}
 
-          {/* Ampliación pendiente */}
           {c.extensionRequest && !c.extensionRequest.decision && (
             <Card className="border-warning/30 bg-warning-soft/40">
               <div className="flex items-start gap-3">
@@ -408,7 +369,6 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
             </Card>
           )}
 
-          {/* Acciones principales */}
           {!isVerification && (
             <Card>
               <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint mb-3">Acciones del jefe</p>
@@ -423,7 +383,6 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
             </Card>
           )}
 
-          {/* Enviar a verificación */}
           {!isVerification && (
             <Card className={cn(allComplete ? "border-brand-300 bg-brand-50/50" : "")}>
               <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint mb-3">Finalización</p>
@@ -461,7 +420,6 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
             </Card>
           )}
 
-          {/* Resumen de evidencias */}
           <Card>
             <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint mb-3">Evidencias registradas</p>
             <div className="grid grid-cols-3 gap-2 text-center">
@@ -501,11 +459,11 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
       </Modal>
 
       {/* Panel lateral: registro de avances */}
-      {activeItem && (
+      {activeItemId && (
         <ActivityDrawer
           caseId={c.id}
-          item={items.find((it) => it.id === activeItem)!}
-          onClose={() => setActiveItem(null)}
+          item={items.find((it) => it.id === activeItemId)!}
+          onClose={() => setActiveItemId(null)}
         />
       )}
     </div>
@@ -516,15 +474,12 @@ function PlanExecutionView({ caseId, s }: { caseId: string; s: ReturnType<typeof
 function CountdownCard({ days, isVerification }: { days: number; isVerification: boolean }) {
   const isOverdue = days < 0;
   const isSoon = days >= 0 && days <= 2;
-  const tone = isOverdue ? "critical" : isSoon ? "warning" : "brand";
   const bg = isOverdue ? "bg-critical-soft border-critical/20" : isSoon ? "bg-warning-soft border-warning/25" : "bg-brand-gradient border-transparent";
 
   return (
     <Card className={cn("p-5 text-white border-0 relative overflow-hidden", bg)}>
       <div className="relative">
-        <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-white/70">
-          {isVerification ? "Caso en verificación" : "Tiempo restante"}
-        </p>
+        <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-white/70">{isVerification ? "Caso en verificación" : "Tiempo restante"}</p>
         {isVerification ? (
           <>
             <p className="mt-3 text-[28px] font-bold tabular-nums leading-none">—</p>
@@ -536,11 +491,9 @@ function CountdownCard({ days, isVerification }: { days: number; isVerification:
               {isOverdue ? Math.abs(days) : days}
               <span className="text-[18px] font-semibold ml-1.5">{isOverdue ? "d vencido" : "d"}</span>
             </p>
-            <p className="text-[12.5px] text-white/80 mt-2">
-              {isOverdue ? "El plazo del plan está vencido." : isSoon ? "El plazo vence pronto." : "Días restantes antes del vencimiento."}
-            </p>
+            <p className="text-[12.5px] text-white/80 mt-2">{isOverdue ? "El plazo del plan está vencido." : isSoon ? "El plazo vence pronto." : "Días restantes antes del vencimiento."}</p>
             <div className="mt-4 h-1.5 rounded-full bg-white/20 overflow-hidden">
-              <div className={cn("h-full rounded-full", isOverdue ? "bg-white" : "bg-white")} style={{ width: `${Math.min(100, Math.max(15, isOverdue ? 100 : (days / 14) * 100))}%` }} />
+              <div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, Math.max(15, isOverdue ? 100 : (days / 14) * 100))}%` }} />
             </div>
           </>
         )}
@@ -570,7 +523,6 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
   const submit = () => {
     if (!canSend) return;
     s.requestExtension(caseId, { motivo: motivo.trim(), justificacion: justificacion.trim(), nuevaFecha });
-    // Adjuntar evidencias al caso
     evidencias.forEach((ev) => s.addExecutionEvidence(caseId, ev));
     setMotivo(""); setJustificacion(""); setEvidencias([]);
     onClose();
@@ -586,18 +538,14 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={submit} disabled={!canSend}>
-            <Send className="h-4 w-4" /> Enviar solicitud a SO
-          </Button>
+          <Button onClick={submit} disabled={!canSend}><Send className="h-4 w-4" /> Enviar solicitud a SO</Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="rounded-lg bg-info-soft border border-info/20 p-3.5 flex items-start gap-2.5">
           <Mail className="h-4 w-4 text-info-ink shrink-0 mt-0.5" />
-          <p className="text-[12.5px] text-info-ink">
-            La solicitud se notificará a Seguridad Operativa y se enviará un correo. Quedará registrada en el historial del expediente.
-          </p>
+          <p className="text-[12.5px] text-info-ink">La solicitud se notificará a Seguridad Operativa y se enviará un correo. Quedará registrada en el historial del expediente.</p>
         </div>
         <Field label="Motivo de la solicitud" required>
           <Input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Razón principal de la ampliación…" />
@@ -630,7 +578,7 @@ function ExtensionModal({ open, onClose, caseId }: { open: boolean; onClose: () 
   );
 }
 
-/* ─── Panel lateral: registro de avances por actividad ─── */
+/* ─── Panel lateral: registro de avances ─── */
 function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: ActionItem; onClose: () => void }) {
   const s = useStore();
   const [progress, setProgress] = useState(item.progress);
@@ -649,7 +597,6 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-[2px] animate-[fadeIn_0.2s_ease-out]" onClick={onClose} />
       <div className="relative w-full max-w-md h-full bg-white shadow-[var(--shadow-pop)] animate-[riseUp_0.25s_ease-out] flex flex-col">
-        {/* Header */}
         <div className="p-5 border-b border-line-soft flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Actividad</p>
@@ -661,9 +608,7 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Meta */}
           <div className="grid grid-cols-2 gap-3 rounded-lg bg-surface border border-line p-3 text-[12px]">
             <div><p className="text-ink-faint">Responsable</p><p className="text-ink font-medium mt-0.5">{item.owner}</p></div>
             <div><p className="text-ink-faint">Prioridad</p><p className="text-ink font-medium mt-0.5">{PRIORITY_LABELS[item.priority]}</p></div>
@@ -671,7 +616,6 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
             <div><p className="text-ink-faint">Límite</p><p className="text-ink font-medium mt-0.5">{formatDate(item.dueDate)}</p></div>
           </div>
 
-          {/* Estado actual */}
           <div>
             <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-2">Estado actual</p>
             <div className="flex gap-2">
@@ -685,26 +629,21 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
             </div>
           </div>
 
-          {/* Porcentaje */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint">Porcentaje de avance</p>
               <span className="text-[13px] tabular-nums font-semibold text-ink">{progress}%</span>
             </div>
-            <input type="range" min={0} max={100} step={10} value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full accent-brand-700" />
+            <input type="range" min={0} max={100} step={10} value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="w-full accent-brand-700" />
             <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => s.updateActionItem(caseId, item.id, { progress })}>
               <Check className="h-4 w-4" /> Guardar porcentaje
             </Button>
           </div>
 
-          {/* Fecha de ejecución */}
           <Field label="Fecha de ejecución">
             <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </Field>
 
-          {/* Comentario */}
           <div>
             <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-2">Registrar comentario</p>
             <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Describa el avance realizado…" />
@@ -714,7 +653,6 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
             </Button>
           </div>
 
-          {/* Evidencias */}
           <div>
             <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-2">Adjuntar evidencias</p>
             <div className="grid grid-cols-3 gap-2">
@@ -724,20 +662,16 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
             </div>
           </div>
 
-          {/* Comentarios existentes */}
           {item.comments.length > 0 && (
             <div>
               <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-2">Comentarios registrados</p>
               <div className="space-y-1.5">
-                {item.comments.map((cm, i) => (
-                  <div key={i} className="rounded-md bg-surface p-2.5 text-[12px] text-ink-soft">{cm}</div>
-                ))}
+                {item.comments.map((cm, i) => <div key={i} className="rounded-md bg-surface p-2.5 text-[12px] text-ink-soft">{cm}</div>)}
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-line-soft bg-surface/50">
           {item.status !== "completado" ? (
             <Button className="w-full" onClick={() => { s.updateActionItem(caseId, item.id, { status: "completado", progress: 100 }); onClose(); }}>
@@ -754,7 +688,7 @@ function ActivityDrawer({ caseId, item, onClose }: { caseId: string; item: Actio
   );
 }
 
-/* ─── Helpers visuales ─── */
+/* ─── Helpers ─── */
 function InfoCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-2.5 min-w-0">
@@ -798,8 +732,8 @@ function EvStat({ icon, value, label }: { icon: React.ReactNode; value: number; 
   );
 }
 
-/* ─── Descargar plan (PDF simulado) ─── */
-function downloadPlan(c: ReturnType<typeof useStore>["cases"][number]) {
+/* ─── Descargar plan (PDF) ─── */
+function downloadPlan(c: CaseFile) {
   if (!c.actionPlan) return;
   const plan = c.actionPlan;
   const w = window.open("", "_blank");

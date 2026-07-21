@@ -124,11 +124,13 @@ export interface CaseFile {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  investigator?: string; // Analista SO asignado a la investigación
   assignee?: string;
   assigneeArea?: Area;
   assignmentPriority?: Priority;
   assignmentDueDate?: string;
   assignmentNote?: string;
+  involvedWorkers?: InvolvedWorker[];
   evidence: Evidence[];
   timeline: TimelineEvent[];
   evaluation?: {
@@ -205,9 +207,40 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   consulta: "Consulta",
 };
 
+export type LaborState = "activo" | "licencia" | "suspendido" | "baja_definitiva";
+
+export const LABOR_STATE_LABELS: Record<LaborState, string> = {
+  activo: "Activo",
+  licencia: "Licencia",
+  suspendido: "Suspendido",
+  baja_definitiva: "Baja Definitiva",
+};
+
+export type ImplicationType =
+  | "afectado"
+  | "presunto_responsable"
+  | "testigo"
+  | "operador_involucrado"
+  | "personal_apoyo"
+  | "supervisor_participante"
+  | "responsable_operativo"
+  | "otro";
+
+export const IMPLICATION_LABELS: Record<ImplicationType, string> = {
+  afectado: "Afectado",
+  presunto_responsable: "Presunto responsable",
+  testigo: "Testigo",
+  operador_involucrado: "Operador involucrado",
+  personal_apoyo: "Personal de apoyo",
+  supervisor_participante: "Supervisor participante",
+  responsable_operativo: "Responsable operativo",
+  otro: "Otro",
+};
+
 export interface User {
   id: string;
   code: string; // Código del trabajador (EMP-0001)
+  dni: string; // DNI del trabajador
   name: string;
   role: Role;
   userRole: UserRole;
@@ -217,9 +250,30 @@ export interface User {
   phone?: string;
   initials: string;
   status: "activo" | "inactivo";
+  laborState: LaborState;
   hiredAt: string; // Fecha de ingreso
   lastSyncAt: string; // Última sincronización
   avatarColor?: string;
+}
+
+// Trabajador involucrado en un caso (snapshot inmutable de los datos al momento de agregarlo)
+export interface InvolvedWorker {
+  id: string;
+  userId: string;
+  code: string;
+  dni: string;
+  name: string;
+  cargo: string;
+  area: Area;
+  initials: string;
+  avatarColor?: string;
+  laborState: LaborState; // puede cambiar a baja_definitiva tras sincronización
+  immediateBoss: string; // Jefe inmediato
+  implication: ImplicationType; // Tipo de implicación en el caso
+  statement?: string; // Declaración
+  observations?: string; // Observaciones
+  addedAt: string;
+  removedAt?: string; // si fue retirado del caso
 }
 
 export interface SyncLog {

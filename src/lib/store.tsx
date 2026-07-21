@@ -14,7 +14,10 @@ import {
   type Area,
   type CaseFile,
   type Evidence,
+  type ImplicationType,
+  type InvolvedWorker,
   type Investigation,
+  type LaborState,
   type Notification,
   type Priority,
   type Role,
@@ -213,6 +216,13 @@ interface StoreValue {
   syncFromExcel: () => Promise<{ newCount: number; updatedCount: number; deactivatedCount: number; durationSec: number }>;
   assignUserRole: (userId: string, role: UserRole) => void;
   deactivateUser: (userId: string) => void;
+  searchWorkers: (query: string) => User[];
+
+  // Investigación — Trabajadores involucrados
+  addInvolvedWorker: (caseId: string, user: User, implication: ImplicationType) => void;
+  removeInvolvedWorker: (caseId: string, workerId: string) => void;
+  updateInvolvedWorker: (caseId: string, workerId: string, patch: { implication?: ImplicationType; statement?: string; observations?: string }) => void;
+  reassignResponsible: (caseId: string, newAssignee: string, newArea: Area, motivo: string) => void;
 
   getCase: (id: string) => CaseFile | undefined;
   resetAll: () => void;
@@ -756,7 +766,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const merged = [...updated, ...newUsers];
       // 3) Dar de baja: EMP-0025 ya no aparece en el Excel
       const finalUsers = merged.map((u) =>
-        u.code === "EMP-0025" ? { ...u, status: "inactivo" as const, lastSyncAt: now } : u
+        u.code === "EMP-0025" ? { ...u, status: "inactivo" as const, laborState: "baja_definitiva" as const, lastSyncAt: now } : u
       );
       const uniqueByCode = new Map(finalUsers.map((u) => [u.code, u]));
       return Array.from(uniqueByCode.values());
@@ -781,6 +791,97 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const deactivateUser = useCallback((userId: string) => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: "inactivo" as const } : u)));
   }, []);
+
+  const searchWorkers = useCallback((query: string): User[] => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return users.filter((u) =>
+      u.code.toLowerCase().includes(q) ||
+      u.dni.toLowerCase().includes(q) ||
+      u.name.toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [users]);
+
+  // ─── Investigación — Trabajadores involucrados ─────────────────────
+  const addInvolvedWorker = useCallback((caseId: string, user: User, implication: ImplicationType) => {
+    const boss = user.area ? AREA_HEADS[user.area] : "—";
+    const worker: InvolvedWorker = {
+      id: uid("iw"),
+      userId: user.id,
+      code: user.code,
+      dni: user.dni,
+      name: user.name,
+      cargo: user.cargo,
+      area: user.area ?? "operaciones",
+      initials: user.initials,
+      avatarColor: user.avatarColor,
+      laborState: user.laborState,
+      immediateBoss: boss,
+      implication,
+      addedAt: nowISO(),
+    };
+    mutate(caseId, (c) =>
+      pushTimeline(
+        { ...c, involvedWorkers: [...(c.involvedWorkers ?? []), worker] },
+        {
+          kind: "comentario",
+          actor: SAFETY_USER.name,
+          actorRole: "seguridad",
+          title: `Trabajador involucrado agregado — ${worker.name}`,
+          detail: `Código ${worker.code} · ${worker.cargo} · Implicación: ${implication}. Jefe inmediato: ${boss}.`,
+        }
+      )
+    );
+  }, [mutate, users]);
+
+  const removeInvolvedWorker = useCallback((caseId: string, workerId: string) => {
+    mutate(caseId, (c) => {
+      const worker = (c.involvedWorkers ?? []).find((w) => w.id === workerId);
+      if (!worker) return c;
+      return pushTimeline(
+        {
+          ...c,
+          involvedWorkers: (c.involvedWorkers ?? []).map((w) =>
+            w.id === workerId ? { ...w, removedAt: nowISO() } : w
+          ),
+        },
+        {
+          kind: "comentario",
+          actor: SAFETY_USER.name,
+          actorRole: "seguridad",
+          title: `Trabajador retirado del caso — ${worker.name}`,
+          detail: `El trabajador ${worker.name} (${worker.code}) fue retirado del caso. Su información histórica se conserva.`,
+        }
+      );
+    });
+  }, [mutate]);
+
+  const updateInvolvedWorker = useCallback(
+    (caseId: string, workerId: string, patch: { implication?: ImplicationType; statement?: string; observations?: string }) => {
+      mutate(caseId, (c) => ({
+        ...c,
+        involvedWorkers: (c.involvedWorkers ?? []).map((w) =>
+          w.id === workerId ? { ...w, ...patch } : w
+        ),
+      }));
+    },
+    [mutate]
+  );
+
+  const reassignResponsible = useCallback((caseId: string, newAssignee: string, newArea: Area, motivo: string) => {
+    mutate(caseId, (c) =>
+      pushTimeline(
+        { ...c, assignee: newAssignee, assigneeArea: newArea },
+        {
+          kind: "comentario",
+          actor: SAFETY_USER.name,
+          actorRole: "seguridad",
+          title: `Responsable reasignado — ${newAssignee}`,
+          detail: `Motivo: ${motivo}. Responsable anterior: ${c.assignee ?? "—"}. Nuevo responsable: ${newAssignee} (${AREA_LABELS[newArea]}).`,
+        }
+      )
+    );
+  }, [mutate]);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -843,6 +944,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     syncFromExcel,
     assignUserRole,
     deactivateUser,
+    searchWorkers,
+    addInvolvedWorker,
+    removeInvolvedWorker,
+    updateInvolvedWorker,
+    reassignResponsible,
     getCase,
     resetAll,
   };

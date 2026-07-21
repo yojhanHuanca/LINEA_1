@@ -196,7 +196,9 @@ export type UserRole =
   | "supervisor"
   | "jefe_area"
   | "responsable_plan"
-  | "consulta";
+  | "consulta"
+  | "auditor"
+  | "investigador";
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   administrador: "Administrador",
@@ -205,16 +207,81 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   jefe_area: "Jefe de Área",
   responsable_plan: "Responsable del Plan",
   consulta: "Consulta",
+  auditor: "Auditor",
+  investigador: "Investigador",
 };
 
-export type LaborState = "activo" | "licencia" | "suspendido" | "baja_definitiva";
+export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  administrador: "Acceso total al sistema, gestión de usuarios y configuración",
+  analista_so: "Gestión de casos, investigación y elaboración de planes de acción",
+  supervisor: "Supervisión operativa y seguimiento de actividades del área",
+  jefe_area: "Ejecución de planes de acción y gestión de su área responsable",
+  responsable_plan: "Responsable del cumplimiento de actividades específicas del plan",
+  consulta: "Acceso de solo lectura a expedientes y reportes",
+  auditor: "Revisión de cumplimiento, auditorías y trazabilidad de procesos",
+  investigador: "Conducción de investigaciones de seguridad operativa",
+};
+
+export type LaborState = "activo" | "vacaciones" | "licencia" | "suspendido" | "baja_temporal" | "baja_definitiva";
 
 export const LABOR_STATE_LABELS: Record<LaborState, string> = {
   activo: "Activo",
+  vacaciones: "Vacaciones",
   licencia: "Licencia",
   suspendido: "Suspendido",
+  baja_temporal: "Baja Temporal",
   baja_definitiva: "Baja Definitiva",
 };
+
+export const LABOR_STATE_TONE: Record<LaborState, "brand" | "info" | "warning" | "critical" | "neutral"> = {
+  activo: "brand",
+  vacaciones: "info",
+  licencia: "info",
+  suspendido: "warning",
+  baja_temporal: "warning",
+  baja_definitiva: "critical",
+};
+
+export type Turno = "mañana" | "tarde" | "noche" | "rotativo";
+
+export const TURNO_LABELS: Record<Turno, string> = {
+  mañana: "Mañana",
+  tarde: "Tarde",
+  noche: "Noche",
+  rotativo: "Rotativo",
+};
+
+export type ContractType = "indefinido" | "plazo_fijo" | "contratista" | "practicante";
+
+export const CONTRACT_LABELS: Record<ContractType, string> = {
+  indefinido: "Indefinido",
+  plazo_fijo: "Plazo Fijo",
+  contratista: "Contratista",
+  practicante: "Practicante",
+};
+
+export interface WorkHistoryEntry {
+  id: string;
+  at: string;
+  field: string; // "area", "cargo", "jefe", "correo", "estado", "alta"
+  oldValue: string;
+  newValue: string;
+  source: "excel" | "manual";
+}
+
+export interface UserActivity {
+  id: string;
+  at: string;
+  type: "login" | "caso_revisado" | "plan_aceptado" | "investigacion" | "archivo_cargado" | "correo_enviado" | "cambio";
+  title: string;
+  detail?: string;
+}
+
+export interface RoleAssignment {
+  role: UserRole;
+  assignedBy: string;
+  assignedAt: string;
+}
 
 export type ImplicationType =
   | "afectado"
@@ -244,16 +311,25 @@ export interface User {
   name: string;
   role: Role;
   userRole: UserRole;
+  roles: RoleAssignment[]; // roles asignados con historial
   area?: Area;
+  subarea?: string;
   cargo: string;
   email: string;
   phone?: string;
   initials: string;
   status: "activo" | "inactivo";
   laborState: LaborState;
+  turno: Turno;
+  contractType: ContractType;
+  sede: string; // Centro de trabajo
+  station?: string; // Estación asignada
   hiredAt: string; // Fecha de ingreso
   lastSyncAt: string; // Última sincronización
+  lastSyncBy: string; // Usuario que realizó la última sincronización
   avatarColor?: string;
+  workHistory: WorkHistoryEntry[];
+  activity: UserActivity[];
 }
 
 // Trabajador involucrado en un caso (snapshot inmutable de los datos al momento de agregarlo)
@@ -294,6 +370,8 @@ export const USER_ROLE_TONE: Record<UserRole, "brand" | "info" | "warning" | "ne
   jefe_area: "warning",
   responsable_plan: "success",
   consulta: "neutral",
+  auditor: "info",
+  investigador: "brand",
 };
 
 export const STATIONS: string[] = [

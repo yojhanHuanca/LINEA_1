@@ -755,6 +755,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           initials,
           lastSyncAt: now,
           avatarColor: ["#14814a", "#2c7be0", "#d99520", "#8a6fd6", "#d23a2c", "#0f6b3e", "#5fb4d4", "#c79a3e"][colorIdx],
+          roles: [{ role: nu.userRole, assignedBy: "Sistema (Excel)", assignedAt: now }],
+          workHistory: [{ id: `wh_alta_${nu.code}`, at: now, field: "alta", oldValue: "—", newValue: "Nuevo ingreso desde Excel", source: "excel" as const }],
+          activity: [{ id: `act_alta_${nu.code}`, at: now, type: "cambio" as const, title: "Alta de trabajador", detail: "Sincronizado desde Excel corporativo" }],
         };
       });
       // 2) Actualizar existentes (simular cambio de área en EMP-0011)

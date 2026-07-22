@@ -18,11 +18,13 @@ import {
   Gauge,
   PieChart,
   Download,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Logo } from "@/design-system/brand/Logo";
+import { AdminGate } from "@/pages/admin/AdminGate";
 
 interface NavItem {
   to: string;
@@ -57,6 +59,7 @@ export function Sidebar() {
   const counts = useBadgeCount();
   const { notifications } = useStore();
   const alertCount = notifications.filter((n) => !n.read && n.audience !== "reportante").length;
+  const [showAdminGate, setShowAdminGate] = useState(false);
 
   const groups: NavGroup[] = [
     {
@@ -224,6 +227,16 @@ export function Sidebar() {
             );
           })}
         </div>
+
+        {/* Admin Access */}
+        <div className="h-px bg-line-soft my-3 mx-3" />
+        <button
+          onClick={() => setShowAdminGate(true)}
+          className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-[13px] font-medium transition-colors text-ink-soft hover:bg-surface hover:text-ink"
+        >
+          <Shield className="h-[18px] w-[18px] shrink-0 text-ink-quiet" />
+          <span className="flex-1 text-left">Centro de Administración</span>
+        </button>
       </nav>
 
       <div className="p-3 border-t border-line-soft">
@@ -237,6 +250,12 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+
+      <AdminGate
+        open={showAdminGate}
+        onClose={() => setShowAdminGate(false)}
+        onSuccess={() => setShowAdminGate(false)}
+      />
     </aside>
   );
 }

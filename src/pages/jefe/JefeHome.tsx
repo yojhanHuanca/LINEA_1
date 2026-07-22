@@ -376,12 +376,17 @@ function PlanExecutionView({ c, s }: { c: CaseFile; s: ReturnType<typeof useStor
                 <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setExtOpen(true)}>
                   <Timer className="h-4 w-4" /> Solicitar ampliación de plazo
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => downloadPlan(c)}>
-                  <Download className="h-4 w-4" /> Descargar Plan de Acción
-                </Button>
               </div>
             </Card>
           )}
+
+          {/* Descargar Plan siempre visible (ejecución y verificación) */}
+          <Card>
+            <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint mb-3">Documentos</p>
+            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => downloadPlan(c)}>
+              <Download className="h-4 w-4" /> Descargar Plan de Acción
+            </Button>
+          </Card>
 
           {!isVerification && (
             <Card className={cn(allComplete ? "border-brand-300 bg-brand-50/50" : "")}>

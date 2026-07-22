@@ -885,7 +885,12 @@ function PlanStage({ c, store }: { c: Store["cases"][number]; store: Store }) {
               <CheckCircle2 className="h-5 w-5 text-brand-700 shrink-0" />
               <p className="text-[12.5px] text-brand-800"><span className="font-semibold">Plan aprobado.</span> La etapa de Ejecución está habilitada.</p>
             </div>
-            <Button size="sm" onClick={() => store.startExecution(c.id)}><Rocket className="h-4 w-4" /> Iniciar ejecución</Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => downloadPlan(c)}>
+                <Download className="h-4 w-4" /> Descargar Plan
+              </Button>
+              <Button size="sm" onClick={() => store.startExecution(c.id)}><Rocket className="h-4 w-4" /> Iniciar ejecución</Button>
+            </div>
           </div>
         </StageSection>
       </div>
@@ -1057,6 +1062,11 @@ function PlanDisplay({ c }: { c: Store["cases"][number] }) {
   const plan = c.actionPlan!;
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end gap-2 -mb-1">
+        <Button variant="outline" size="sm" onClick={() => downloadPlan(c)}>
+          <Download className="h-4 w-4" /> Descargar Plan de Acción
+        </Button>
+      </div>
       <div className="grid sm:grid-cols-2 gap-3 rounded-lg bg-surface border border-line p-4">
         <PlanMeta label="Elaborado por" value={plan.elaboratedBy} />
         <PlanMeta label="Tipo de acción" value={plan.actionType} />
@@ -1477,5 +1487,64 @@ function TimelineIcon({ kind }: { kind: string }) {
   };
   const Icon = map[kind] ?? FileText;
   return <Icon className="h-4 w-4" />;
+}
+
+/* ─── Descargar Plan de Acción (PDF imprimible) ─── */
+function downloadPlan(c: Store["cases"][number]) {
+  if (!c.actionPlan) return;
+  const plan = c.actionPlan;
+  const w = window.open("", "_blank");
+  if (!w) return;
+  const rows = plan.items.map((it, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${escapeHtml(it.name)}</strong><br/><span style="color:#666;font-size:11px">${escapeHtml(it.description)}</span></td>
+      <td>${escapeHtml(it.owner)}</td>
+      <td>${formatDate(it.startDate)}</td>
+      <td>${formatDate(it.dueDate)}</td>
+      <td>${it.status === "completado" ? "Finalizada" : it.status === "en_progreso" ? "En proceso" : "Pendiente"}</td>
+      <td>${it.progress}%</td>
+    </tr>`).join("");
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Plan de Acción ${c.id}</title>
+    <style>
+      body { font-family: 'Inter', -apple-system, sans-serif; color: #182621; margin: 40px; }
+      .head { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #14814a; padding-bottom: 16px; margin-bottom: 24px; }
+      .logo { width: 44px; height: 44px; background: #0F6B3E; border-radius: 10px; display: grid; place-items: center; color: #fff; font-weight: 700; }
+      h1 { font-size: 22px; margin: 0; } h2 { font-size: 15px; margin: 20px 0 10px; color: #0F6B3E; border-bottom: 1px solid #e3e8e5; padding-bottom: 6px; }
+      .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; font-size: 12.5px; margin-bottom: 12px; }
+      .meta div { border-left: 2px solid #14814a; padding-left: 8px; } .meta b { color: #767f79; font-weight: 600; font-size: 10.5px; text-transform: uppercase; }
+      table { width: 100%; border-collapse: collapse; font-size: 11.5px; } th, td { border: 1px solid #e3e8e5; padding: 6px 8px; text-align: left; vertical-align: top; }
+      th { background: #f6f8f7; font-weight: 600; color: #41504a; } .foot { margin-top: 28px; padding-top: 12px; border-top: 1px solid #e3e8e5; font-size: 10.5px; color: #767f79; }
+    </style></head><body>
+    <div class="head"><div class="logo">S1</div><div><h1>Plan de Acción — SIGMA L1</h1><div style="color:#767f79;font-size:12px">Línea 1 del Metro de Lima · Seguridad Operativa</div></div></div>
+    <h2>Información del expediente</h2>
+    <div class="meta">
+      <div><b>Código</b><br/>${c.id}</div>
+      <div><b>Tipo de incidencia</b><br/>${EVENT_LABELS[c.type]}</div>
+      <div><b>Estación</b><br/>${escapeHtml(c.station)}</div>
+      <div><b>Área responsable</b><br/>${AREA_LABELS[c.assigneeArea ?? c.area]}</div>
+      <div><b>Prioridad</b><br/>${PRIORITY_LABELS[c.priority]}</div>
+      <div><b>Fecha límite</b><br/>${formatDate(c.slaDueDate)}</div>
+    </div>
+    <h2>Objetivo del Plan de Acción</h2>
+    <p style="font-size:12.5px">${escapeHtml(plan.actionType)} — ${escapeHtml(plan.description)}</p>
+    <div class="meta">
+      <div><b>Elaborado por</b><br/>${escapeHtml(plan.elaboratedBy)}</div>
+      <div><b>Fecha de creación</b><br/>${formatDate(plan.submittedAt ?? c.createdAt)}</div>
+      <div><b>Tiempo estimado</b><br/>${escapeHtml(plan.estimatedTime)}</div>
+      <div><b>Prioridad del plan</b><br/>${PRIORITY_LABELS[plan.priority]}</div>
+    </div>
+    ${plan.observations ? `<h2>Observaciones generales</h2><p style="font-size:12.5px">${escapeHtml(plan.observations)}</p>` : ""}
+    <h2>Actividades</h2>
+    <table><thead><tr><th>#</th><th>Actividad</th><th>Responsable</th><th>Inicio</th><th>Límite</th><th>Estado</th><th>Avance</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div class="foot">Documento generado por SIGMA L1 · ${formatDateTime(new Date().toISOString())}</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]!));
 }
 

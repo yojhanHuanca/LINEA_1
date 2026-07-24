@@ -479,7 +479,7 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
 
   // Valor limpio para guardar (sin el prefijo __otro__:)
   const cleanClassification = classification.startsWith("__otro__:")
-    ? classification.slice(8).trim()
+    ? classification.slice(9).trim()
     : classification.trim();
   const canSave = cleanClassification.length > 0;
   const gravityFromRisk = riskToPriority(riskLevel);
@@ -536,7 +536,7 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
         {classification.startsWith("__otro__:") && (
           <Input
             className="mt-2"
-            value={classification.slice(8)}
+            value={classification.slice(9)}
             onChange={(e) => setClassification(`__otro__:${e.target.value}`)}
             placeholder="Escriba la clasificación personalizada…"
             autoFocus

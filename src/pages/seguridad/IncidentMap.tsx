@@ -15,6 +15,7 @@ import {
   Shield,
   Train,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { Card } from "@/design-system/primitives/Card";
 import { Pill, RiskPill, StagePill } from "@/design-system/primitives/Pill";
@@ -23,6 +24,10 @@ import {
   AREA_LABELS,
   EVENT_LABELS,
   STAGE_STATUS,
+  TIPO_SOP_LABELS,
+  SUBTIPO_SOP_LABELS,
+  PROCEDENCIA_LABELS,
+  ESTADO_HALLAZGO_LABELS,
   riskCategory,
   type Area,
   type CaseFile,
@@ -38,12 +43,15 @@ interface StationCaseSummary {
   stage: CaseFile["stage"];
   riskLevel: DomainRiskLevel;
   createdAt: string;
+  type: CaseFile["type"];
+  sop?: CaseFile["sop"];
 }
 
 interface StationData {
   name: string;
   x: number;
   y: number;
+  km: number;
   total: number;
   abiertos: number;
   cerrados: number;
@@ -54,6 +62,7 @@ interface StationData {
   ultimoTipo: string;
   cumplimiento: number;
   recentCases: StationCaseSummary[];
+  ultimoSOP?: CaseFile["sop"];
 }
 
 const RISK_CONFIG: Record<VisualRisk, { color: string; label: string; bg: string; text: string; ring: string }> = {
@@ -70,27 +79,37 @@ const VISUAL_RISK_ORDER: Record<VisualRisk, number> = {
   critico: 3,
 };
 
-const STATION_COORDS: { name: string; x: number; y: number }[] = [
-  { name: "San Juan", x: 90, y: 430 },
-  { name: "Atocongo", x: 130, y: 390 },
-  { name: "Pamplona", x: 170, y: 350 },
-  { name: "Matellini", x: 210, y: 315 },
-  { name: "Puno", x: 245, y: 285 },
-  { name: "Parque Industrial", x: 280, y: 258 },
-  { name: "Pueblo Libre", x: 315, y: 232 },
-  { name: "Oscar R. Benavides", x: 355, y: 208 },
-  { name: "Cabitos", x: 400, y: 185 },
-  { name: "Ayacucho", x: 445, y: 165 },
-  { name: "Javier Prado", x: 495, y: 145 },
-  { name: "El Ángel", x: 545, y: 128 },
-  { name: "Gamarra", x: 590, y: 116 },
-  { name: "Caja de Agua", x: 635, y: 108 },
-  { name: "Pirámide del Sol", x: 680, y: 102 },
-  { name: "Estación Central", x: 725, y: 98 },
+const STATION_COORDS: { name: string; x: number; y: number; km: number }[] = [
+  { name: "Villa El Salvador", x: 60, y: 445, km: 0 },
+  { name: "Parque Industrial", x: 88, y: 415, km: 2.2 },
+  { name: "Pumacahua", x: 116, y: 385, km: 4.4 },
+  { name: "Villa Maria", x: 146, y: 355, km: 6.5 },
+  { name: "Maria Auxiliadora", x: 178, y: 325, km: 8.5 },
+  { name: "San Juan", x: 212, y: 295, km: 10.5 },
+  { name: "Atocongo", x: 248, y: 265, km: 12.5 },
+  { name: "Jorge Chavez", x: 286, y: 235, km: 14.5 },
+  { name: "Ayacucho", x: 326, y: 205, km: 16.5 },
+  { name: "Cabitos", x: 368, y: 178, km: 18.5 },
+  { name: "Angamos", x: 412, y: 155, km: 20.5 },
+  { name: "San Borja Sur", x: 458, y: 136, km: 22.5 },
+  { name: "La Cultura", x: 506, y: 122, km: 24.5 },
+  { name: "Arriola", x: 556, y: 112, km: 26.5 },
+  { name: "Gamarra", x: 606, y: 106, km: 28.0 },
+  { name: "Miguel Grau", x: 656, y: 104, km: 29.5 },
+  { name: "El Angel", x: 706, y: 106, km: 30.5 },
+  { name: "Presbitero Maestro", x: 756, y: 112, km: 31.5 },
+  { name: "Caja de Agua", x: 806, y: 122, km: 32.5 },
+  { name: "Piramide del Sol", x: 856, y: 136, km: 33.0 },
+  { name: "Los Jardines", x: 906, y: 155, km: 33.5 },
+  { name: "Los Postes", x: 956, y: 178, km: 34.0 },
+  { name: "San Carlos", x: 1006, y: 205, km: 34.5 },
+  { name: "San Martin", x: 1056, y: 235, km: 35.0 },
+  { name: "Santa Rosa", x: 1106, y: 265, km: 35.5 },
+  { name: "Bayovar", x: 1156, y: 295, km: 34.0 },
 ];
 
-const MAP_W = 800;
-const MAP_H = 480;
+const MAP_W = 1220;
+const MAP_H = 500;
 
 export function IncidentMap() {
   const { cases } = useStore();
@@ -116,21 +135,26 @@ export function IncidentMap() {
         const fresh = stations.find((station) => station.name === current.name);
         if (fresh) return fresh;
       }
-      return highlightedStation ?? stations[0];
+      return null;
     });
-  }, [stations, highlightedStation]);
+  }, [stations]);
 
   const linePath = useMemo(() => {
     const pts = STATION_COORDS;
+    if (pts.length < 2) return "";
+    // Construir path con curvas suaves tipo metropolitano (Cubic Bezier entre puntos)
     let d = `M ${pts[0].x} ${pts[0].y}`;
     for (let i = 1; i < pts.length; i++) {
       const prev = pts[i - 1];
       const curr = pts[i];
-      const cx = (prev.x + curr.x) / 2;
-      const cy = (prev.y + curr.y) / 2;
-      d += ` Q ${prev.x} ${prev.y} ${cx} ${cy}`;
+      // Puntos de control suaves
+      const dx = curr.x - prev.x;
+      const cp1x = prev.x + dx * 0.5;
+      const cp1y = prev.y;
+      const cp2x = prev.x + dx * 0.5;
+      const cp2y = curr.y;
+      d += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${curr.x} ${curr.y}`;
     }
-    d += ` T ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
     return d;
   }, []);
 
@@ -188,31 +212,32 @@ export function IncidentMap() {
         />
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
-        <Card padded={false} className="overflow-hidden border-line-strong">
-          <div className="relative bg-[#091828]">
-            <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-[#0d2238] to-[#091828]">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-brand-600/15 border border-brand-500/25 grid place-items-center shrink-0">
-                  <Radio className="h-5 w-5 text-brand-300" />
-                </div>
-                <div>
-                  <p className="text-[15px] font-bold text-white tracking-tight">Tablero Operativo por Estación</p>
-                  <p className="text-[12px] text-slate-300 mt-0.5">
-                    Vista consolidada de Línea 1. Cada estación refleja los casos registrados en el sistema.
-                  </p>
-                </div>
+      <Card padded={false} className="overflow-hidden border-line-strong">
+        <div className="relative">
+          <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-brand-100 bg-gradient-to-r from-brand-50 to-white">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-brand-100 border border-brand-200 grid place-items-center shrink-0">
+                <Radio className="h-5 w-5 text-brand-700" />
               </div>
-              <div className="text-right shrink-0">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/20 px-2.5 py-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10.5px] font-semibold text-emerald-200">ACTUALIZADO</span>
-                </div>
-                <p className="text-[10.5px] text-slate-400 mt-1">Sin filtros manuales</p>
+              <div>
+                <p className="text-[15px] font-bold text-ink tracking-tight">Tablero Operativo por Estación</p>
+                <p className="text-[12px] text-ink-quiet mt-0.5">
+                  Vista consolidada de Línea 1 · 26 estaciones · 34 km
+                </p>
               </div>
             </div>
+            <div className="text-right shrink-0">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-1">
+                <span className="h-2 w-2 rounded-full bg-brand-600 animate-pulse" />
+                <span className="text-[10.5px] font-semibold text-brand-800">ACTUALIZADO</span>
+              </div>
+              <p className="text-[10.5px] text-ink-quiet mt-1">Sin filtros manuales</p>
+            </div>
+            </div>
 
-            <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="w-full h-auto block" style={{ minHeight: 420 }}>
+          {/* Contenedor relativo solo al SVG+popup */}
+          <div className="relative bg-[#eef4f1]">
+            <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="w-full h-auto block" style={{ minHeight: 460 }}>
               <defs>
                 <linearGradient id="lineGradL1" x1="0" y1="1" x2="1" y2="0">
                   <stop offset="0%" stopColor="#14814a" />
@@ -220,31 +245,40 @@ export function IncidentMap() {
                   <stop offset="100%" stopColor="#38a860" />
                 </linearGradient>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e3a5f" strokeWidth="0.5" opacity="0.3" />
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#c4d4cc" strokeWidth="0.5" opacity="0.5" />
                 </pattern>
                 <filter id="markerShadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.45" />
+                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0c5431" floodOpacity="0.3" />
                 </filter>
               </defs>
 
               <rect width={MAP_W} height={MAP_H} fill="url(#grid)" />
-              <path d="M 0 220 Q 200 240 400 200 T 800 180" stroke="#1e3a5f" strokeWidth="14" fill="none" opacity="0.25" strokeLinecap="round" />
-              <path d="M 0 220 Q 200 240 400 200 T 800 180" stroke="#2a5a8a" strokeWidth="1" fill="none" opacity="0.15" strokeDasharray="6 4" />
+              {/* Río Rímac */}
+              <path d="M 0 230 Q 400 260 800 220 T 1220 210" stroke="#b8d4e8" strokeWidth="18" fill="none" opacity="0.3" strokeLinecap="round" />
+              <path d="M 0 230 Q 400 260 800 220 T 1220 210" stroke="#8ab4d8" strokeWidth="1" fill="none" opacity="0.3" strokeDasharray="6 4" />
 
-              <text x="70" y="465" fontSize="9" fill="#46617e" fontWeight="600" letterSpacing="1">VILLA EL SALVADOR</text>
-              <text x="330" y="270" fontSize="9" fill="#46617e" fontWeight="600" letterSpacing="1">SURCO · SAN BORJA</text>
-              <text x="560" y="80" fontSize="9" fill="#46617e" fontWeight="600" letterSpacing="1">S.J. DE LURIGANCHO</text>
+              {/* Etiquetas de distritos */}
+              <text x="60" y="478" fontSize="10" fill="#5a7a6a" fontWeight="700" letterSpacing="1">VILLA EL SALVADOR</text>
+              <text x="340" y="320" fontSize="10" fill="#5a7a6a" fontWeight="700" letterSpacing="1">SURCO · SAN BORJA</text>
+              <text x="750" y="85" fontSize="10" fill="#5a7a6a" fontWeight="700" letterSpacing="1">S.J. DE LURIGANCHO</text>
+              <text x="1080" y="380" fontSize="10" fill="#5a7a6a" fontWeight="700" letterSpacing="1">BAYÓVAR</text>
 
-              <path d={linePath} stroke="#14814a" strokeWidth="8" fill="none" strokeLinecap="round" opacity="0.15" />
-              <path d={linePath} stroke="url(#lineGradL1)" strokeWidth="4" fill="none" strokeLinecap="round" />
-              <path d={linePath} stroke="#fff" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.16" strokeDasharray="3 6" />
+              {/* Línea 1 —轨迹 con gradiente */}
+              <path d={linePath} stroke="#14814a" strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.12" />
+              <path d={linePath} stroke="url(#lineGradL1)" strokeWidth="5" fill="none" strokeLinecap="round" />
+              <path d={linePath} stroke="#ffffff" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.55" strokeDasharray="3 6" />
 
-              {stations.map((station) => {
+              {/* Marcadores de km */}
+              <text x="60" y="468" fontSize="8" fill="#0c5431" fontWeight="600" opacity="0.5">km 0</text>
+              <text x="1150" y="318" fontSize="8" fill="#0c5431" fontWeight="600" opacity="0.5">km 34</text>
+
+              {stations.map((station, idx) => {
                 const risk = RISK_CONFIG[station.riesgo];
                 const isHovered = hovered === station.name;
                 const isSelected = selected?.name === station.name;
                 const hasActive = station.abiertos > 0;
-                const radius = hasActive ? 7 + Math.min(station.abiertos, 4) : station.total > 0 ? 6 : 4.5;
+                const radius = hasActive ? 8 + Math.min(station.abiertos, 4) : 6.5;
+                const labelAbove = idx % 2 === 0;
                 return (
                   <g
                     key={station.name}
@@ -254,92 +288,121 @@ export function IncidentMap() {
                     className="cursor-pointer"
                   >
                     {station.riesgo === "critico" && hasActive && (
-                      <circle cx={station.x} cy={station.y} r={radius + 6} fill={risk.color} opacity="0.14">
-                        <animate attributeName="r" values={`${radius + 4};${radius + 12};${radius + 4}`} dur="2.2s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.2;0.04;0.2" dur="2.2s" repeatCount="indefinite" />
+                      <circle cx={station.x} cy={station.y} r={radius + 6} fill={risk.color} opacity="0.16">
+                        <animate attributeName="r" values={`${radius + 4};${radius + 14};${radius + 4}`} dur="2.2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.24;0.05;0.24" dur="2.2s" repeatCount="indefinite" />
                       </circle>
                     )}
-                    <circle cx={station.x} cy={station.y} r={radius + 4} fill={risk.color} opacity={hasActive ? 0.12 : 0.06} />
+                    <circle cx={station.x} cy={station.y} r={radius + 4} fill={risk.color} opacity={hasActive ? 0.14 : 0.08} />
                     <circle
                       cx={station.x}
                       cy={station.y}
                       r={radius}
-                      fill={hasActive ? risk.color : station.total > 0 ? "#0f253c" : "#091828"}
+                      fill={hasActive ? risk.color : "#ffffff"}
                       stroke={risk.color}
-                      strokeWidth={isSelected ? 3 : 2.4}
+                      strokeWidth={isSelected ? 3.5 : 2.5}
                       filter="url(#markerShadow)"
                       style={{
-                        transform: isHovered || isSelected ? "scale(1.18)" : undefined,
+                        transform: isHovered || isSelected ? "scale(1.2)" : undefined,
                         transformOrigin: `${station.x}px ${station.y}px`,
                       }}
                     />
-                    <circle cx={station.x} cy={station.y} r={2} fill="#fff" opacity={hasActive || station.total > 0 ? 0.9 : 0.45} />
+                    {/* Número de estación */}
+                    <text x={station.x} y={station.y + 3.5} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={hasActive ? "#ffffff" : risk.color}>
+                      {idx + 1}
+                    </text>
+                    {/* Badge de casos abiertos */}
                     {hasActive && (
                       <g>
-                        <rect x={station.x + radius + 2} y={station.y - 8} width={20} height={16} rx={4} fill={risk.color} opacity="0.98" />
-                        <text x={station.x + radius + 12} y={station.y + 3} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#fff">
+                        <rect x={station.x + radius + 3} y={station.y - 9} width={22} height={18} rx={5} fill={risk.color} opacity="0.98" />
+                        <text x={station.x + radius + 14} y={station.y + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">
                           {station.abiertos}
                         </text>
                       </g>
                     )}
-                    {(isHovered || isSelected) && (
-                      <g style={{ pointerEvents: "none" }}>
-                        <rect
-                          x={station.x - station.name.length * 3.2 - 8}
-                          y={station.y - radius - 24}
-                          width={station.name.length * 6.4 + 16}
-                          height={18}
-                          rx={5}
-                          fill="#091828"
-                          stroke={risk.color}
-                          strokeWidth="0.7"
-                          opacity="0.98"
-                        />
-                        <text x={station.x} y={station.y - radius - 12} textAnchor="middle" fontSize="9" fontWeight="600" fill="#fff">
-                          {station.name}
-                        </text>
-                      </g>
-                    )}
+                    {/* Etiqueta de nombre (siempre visible, alternando arriba/abajo) */}
+                    <text
+                      x={station.x}
+                      y={labelAbove ? station.y - radius - 8 : station.y + radius + 14}
+                      textAnchor="middle"
+                      fontSize="9"
+                      fontWeight={isHovered || isSelected ? "700" : "500"}
+                      fill={isSelected ? "#0c5431" : "#4a6a5a"}
+                      style={{ pointerEvents: "none" }}
+                    >
+                      {station.name.length > 18 ? station.name.slice(0, 17) + "…" : station.name}
+                    </text>
+                    {/* km */}
+                    <text
+                      x={station.x}
+                      y={labelAbove ? station.y - radius - 20 : station.y + radius + 26}
+                      textAnchor="middle"
+                      fontSize="7.5"
+                      fill="#7a9a8a"
+                      opacity="0.6"
+                      style={{ pointerEvents: "none" }}
+                    >
+                      km {station.km}
+                    </text>
                   </g>
                 );
               })}
             </svg>
 
-            <div className="flex items-center gap-4 px-4 py-3 bg-[#091828] border-t border-[#17314a]">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Lectura por estación</span>
+            {/* Popup flotante al lado del marcador clickeado */}
+            {selected && (
+              <div
+                className="absolute z-30 w-[320px] animate-[fadeIn_0.18s_var(--ease-out)]"
+                style={{
+                  left: `calc(${(selected.x / MAP_W) * 100}% + 18px)`,
+                  top: `calc(${(selected.y / MAP_H) * 100}% - 20px)`,
+                  transform: selected.x > MAP_W * 0.65 ? "translateX(calc(-100% - 36px))" : undefined,
+                }}
+              >
+                <StationPanel station={selected} onClose={() => setSelected(null)} />
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 px-4 py-3 bg-white border-t border-line">
+              <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider">Lectura por estación</span>
               {(Object.keys(RISK_CONFIG) as VisualRisk[]).map((riskKey) => (
                 <div key={riskKey} className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: RISK_CONFIG[riskKey].color }} />
-                  <span className="text-[11px] text-slate-300">{RISK_CONFIG[riskKey].label}</span>
+                  <span className="text-[11px] text-ink-soft">{RISK_CONFIG[riskKey].label}</span>
                 </div>
               ))}
               <div className="ml-auto flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-brand-300" />
-                <span className="text-[11px] text-slate-400">Seleccione una estación para revisar su detalle</span>
+                <MapPin className="h-3.5 w-3.5 text-brand-700" />
+                <span className="text-[11px] text-ink-quiet">Seleccione una estación para revisar su detalle</span>
               </div>
             </div>
           </div>
-        </Card>
+          </div>
 
-        {selected && <StationPanel station={selected} />}
-      </div>
+        </Card>
 
     </div>
   );
 }
 
-function StationPanel({ station }: { station: StationData }) {
+function StationPanel({ station, onClose }: { station: StationData; onClose: () => void }) {
   const risk = RISK_CONFIG[station.riesgo];
   const latestCase = station.recentCases[0];
 
   return (
-    <Card padded={false} className="overflow-hidden border-line-strong">
-      <div className={cn("px-5 py-4 border-b border-line-soft", risk.bg)}>
+    <Card padded={false} className="overflow-hidden border-line-strong shadow-[0_8px_30px_rgba(12,84,49,0.18)] max-h-[420px] overflow-y-auto">
+      <div className={cn("px-5 py-4 border-b border-line-soft relative", risk.bg)}>
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 h-7 w-7 rounded-lg grid place-items-center text-ink-quiet hover:bg-white/70 transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
         <div className="flex items-start gap-3">
           <div className={cn("h-12 w-12 rounded-xl grid place-items-center shrink-0 ring-2", risk.bg, risk.text, risk.ring)}>
             <Train className="h-6 w-6" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 pr-8">
             <p className="text-[17px] font-bold text-ink tracking-tight">{station.name}</p>
             <p className="text-[12px] text-ink-quiet mt-0.5">Detalle operativo de estación · Línea 1</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -382,6 +445,17 @@ function StationPanel({ station }: { station: StationData }) {
             <InfoRow icon={<CircleDot className="h-3.5 w-3.5" />} label="Último tipo registrado" value={station.ultimoTipo} />
             <InfoRow icon={<Clock className="h-3.5 w-3.5" />} label="Última actualización" value={station.ultimaIncidencia ? formatDateTime(station.ultimaIncidencia) : "Sin registros"} />
             <InfoRow icon={<Building2 className="h-3.5 w-3.5" />} label="Área con mayor incidencia" value={station.area ? AREA_LABELS[station.area] : "Sin asignación"} />
+            {station.ultimoSOP && (
+              <>
+                <div className="h-px bg-line-soft my-2" />
+                <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="Tipo SOP" value={TIPO_SOP_LABELS[station.ultimoSOP.tipoSOP]} />
+                <InfoRow icon={<AlertOctagon className="h-3.5 w-3.5" />} label="Subtipo" value={SUBTIPO_SOP_LABELS[station.ultimoSOP.subtipoSOP]} />
+                <InfoRow icon={<Building2 className="h-3.5 w-3.5" />} label="Procedencia" value={PROCEDENCIA_LABELS[station.ultimoSOP.procedencia]} />
+                <InfoRow icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Estado hallazgo" value={ESTADO_HALLAZGO_LABELS[station.ultimoSOP.estadoHallazgo]} />
+                {station.ultimoSOP.peligro && <InfoRow icon={<AlertOctagon className="h-3.5 w-3.5" />} label="Peligro" value={station.ultimoSOP.peligro} />}
+                {station.ultimoSOP.consecuencia && <InfoRow icon={<AlertOctagon className="h-3.5 w-3.5" />} label="Consecuencia" value={station.ultimoSOP.consecuencia} />}
+              </>
+            )}
           </div>
         </div>
 
@@ -410,6 +484,11 @@ function StationPanel({ station }: { station: StationData }) {
                       <p className="text-[12px] font-mono font-semibold text-brand-700">{item.id}</p>
                       <p className="text-[13px] font-semibold text-ink mt-1 truncate">{item.title}</p>
                       <p className="text-[11px] text-ink-quiet mt-1">{relativeTime(item.createdAt)}</p>
+                      {item.sop && (
+                        <p className="text-[10.5px] text-ink-faint mt-1">
+                          {TIPO_SOP_LABELS[item.sop.tipoSOP]} · {SUBTIPO_SOP_LABELS[item.sop.subtipoSOP]}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <RiskPill risk={item.riskLevel} />
@@ -449,7 +528,7 @@ function StationPanel({ station }: { station: StationData }) {
   );
 }
 
-function buildStationData(coord: { name: string; x: number; y: number }, cases: CaseFile[]): StationData {
+function buildStationData(coord: { name: string; x: number; y: number; km: number }, cases: CaseFile[]): StationData {
   const stationCases = cases.filter((item) => item.station === coord.name);
   const openCases = stationCases.filter((item) => STAGE_STATUS[item.stage] === "abierto");
   const closedCases = stationCases.filter((item) => STAGE_STATUS[item.stage] === "cerrado");
@@ -475,6 +554,8 @@ function buildStationData(coord: { name: string; x: number; y: number }, cases: 
       stage: item.stage,
       riskLevel: item.riskLevel,
       createdAt: item.createdAt,
+      type: item.type,
+      sop: item.sop,
     }));
 
   return {
@@ -489,6 +570,7 @@ function buildStationData(coord: { name: string; x: number; y: number }, cases: 
     ultimoTipo: latestCase ? EVENT_LABELS[latestCase.type] : "Sin incidencias registradas",
     cumplimiento: stationCases.length ? Math.round((closedCases.length / stationCases.length) * 100) : 100,
     recentCases,
+    ultimoSOP: latestCase?.sop,
   };
 }
 

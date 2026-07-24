@@ -293,7 +293,7 @@ export function Dashboard() {
                   t.actorRole === "seguridad" ? "bg-brand-100 text-brand-800" : "bg-surface-2 text-ink-soft"
                 )}
               >
-                {t.actor.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                {(t.actor || "?").split(" ").map((p) => p[0]).slice(0, 2).join("")}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[12.5px] text-ink">

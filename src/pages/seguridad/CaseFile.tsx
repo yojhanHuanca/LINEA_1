@@ -669,7 +669,7 @@ function InvestigationStage({ c, store }: { c: Store["cases"][number]; store: St
 
 /* ─── Tarjetas: Investigador + Jefe Responsable + Trabajadores Involucrados ─── */
 function ResponsiblesAndWorkers({ c, store, readOnly }: { c: Store["cases"][number]; store: Store; readOnly?: boolean }) {
-  const investigatorName = c.investigator ?? "Antonio Rebaza Lizaraso";
+  const investigatorName = c.investigator && c.investigator.trim() ? c.investigator : "Antonio Rebaza Lizaraso";
   const jefeArea = c.assignee ?? (c.assigneeArea ? AREA_HEADS[c.assigneeArea] : "Por asignar");
   const jefeAreaLabel = c.assigneeArea ? AREA_LABELS[c.assigneeArea] : "—";
   const involved = (c.involvedWorkers ?? []).filter((w) => !w.removedAt);
@@ -688,7 +688,7 @@ function ResponsiblesAndWorkers({ c, store, readOnly }: { c: Store["cases"][numb
         {/* Investigador asignado */}
         <div className="flex items-center gap-3 mb-4">
           <div className="h-12 w-12 rounded-full bg-brand-700 text-white grid place-items-center text-[14px] font-bold shrink-0">
-            {investigatorName.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+            {(investigatorName || "?").split(" ").map((p) => p[0] || "").slice(0, 2).join("")}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold text-ink truncate">{investigatorName}</p>

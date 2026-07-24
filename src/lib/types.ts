@@ -370,14 +370,20 @@ export type DireccionVia = "legal" | "N/A";
 export type EstadoPlan = "cerrado" | "pendiente";
 
 export type Area =
+  | "capacitacion"
+  | "control_calidad"
+  | "gh"
+  | "gi"
+  | "ingenieria"
   | "mantenimiento"
-  | "subestaciones"
+  | "mr"
   | "operaciones"
-  | "comunicaciones"
-  | "infraestructura"
-  | "material_rodante"
-  | "limpieza"
-  | "seguridad_fisica";
+  | "pco"
+  | "proyectos"
+  | "seguridad_operativa"
+  | "ssoma"
+  | "teq"
+  | "vias_obras";
 
 export type Stage =
   | "recepcion"
@@ -459,7 +465,7 @@ export interface ExecutionUpdate {
 
 export interface CaseFile {
   id: string; // SOP-01-2026
-  type: EventType;
+  type: TipoSOP;
   title: string;
   description: string;
   observations: string;
@@ -822,38 +828,44 @@ export const STATIONS: string[] = [
 ];
 
 export const AREA_LABELS: Record<Area, string> = {
+  capacitacion: "Capacitación",
+  control_calidad: "Control de Calidad",
+  gh: "GH",
+  gi: "GI",
+  ingenieria: "Ingeniería",
   mantenimiento: "Mantenimiento",
-  subestaciones: "Subestaciones",
+  mr: "MR",
   operaciones: "Operaciones",
-  comunicaciones: "Comunicaciones",
-  infraestructura: "Infraestructura",
-  material_rodante: "Material Rodante",
-  limpieza: "Limpieza y Sanitización",
-  seguridad_fisica: "Seguridad Física",
+  pco: "PCO",
+  proyectos: "Proyectos",
+  seguridad_operativa: "Seguridad Operativa",
+  ssoma: "SSOMA",
+  teq: "TEQ",
+  vias_obras: "Vías y Obras",
 };
 
 export const AREA_HEADS: Record<Area, string> = {
-  mantenimiento: "Jorge Salazar",
-  subestaciones: "Ingrid Quispe",
-  operaciones: "Raúl Mendoza",
-  comunicaciones: "Cecilia Tapia",
-  infraestructura: "Luis Bravo",
-  material_rodante: "Ana Villanueva",
-  limpieza: "Mario Chávez",
-  seguridad_fisica: "Patricia Ríos",
+  capacitacion: "Jefe de Capacitación",
+  control_calidad: "Jefe de Control de Calidad",
+  gh: "Jefe de GH",
+  gi: "Jefe de GI",
+  ingenieria: "Jefe de Ingeniería",
+  mantenimiento: "Jefe de Mantenimiento",
+  mr: "Jefe de MR",
+  operaciones: "Jefe de Operaciones",
+  pco: "Jefe de PCO",
+  proyectos: "Jefe de Proyectos",
+  seguridad_operativa: "Jefe de Seguridad Operativa",
+  ssoma: "Jefe de SSOMA",
+  teq: "Jefe de TEQ",
+  vias_obras: "Jefe de Vías y Obras",
 };
 
-export const EVENT_LABELS: Record<EventType, string> = {
-  accidente: "Accidente",
-  incidente: "Incidente",
-  observacion: "Observación",
-  condicion_insegura: "Condición Insegura",
-  acto_inseguro: "Acto Inseguro",
-  falla_operativa: "Falla Operativa",
-  riesgo: "Riesgo",
+export const EVENT_LABELS: Record<TipoSOP, string> = {
   hallazgo: "Hallazgo",
-  incumplimiento: "Incumplimiento",
-  otro: "Otro evento",
+  incidente: "Incidente",
+  reporte_voluntario: "Reporte Voluntario",
+  accidente: "Accidente",
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

@@ -682,49 +682,38 @@ function ResponsiblesAndWorkers({ c, store, readOnly }: { c: Store["cases"][numb
           <div className="h-9 w-9 rounded-lg bg-brand-50 text-brand-700 grid place-items-center"><ShieldCheck className="h-4.5 w-4.5" /></div>
           <div>
             <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Investigador SO</p>
-            <p className="text-[13px] font-bold text-ink leading-tight">Quien conduce la investigación</p>
+            <p className="text-[13px] font-bold text-ink leading-tight">Responsable de Hallazgo/Investigación/RSO</p>
           </div>
         </div>
+        {!readOnly && (
+          <Field label="Asignar investigador" className="mb-3">
+            <Select
+              value={RESPONSABLES_INVESTIGACION.includes(investigatorName) ? investigatorName : "__otro__"}
+              onChange={(e) => {
+                if (e.target.value === "__otro__") return;
+                store.setInvestigator(c.id, e.target.value);
+              }}
+            >
+              <option value="">Seleccionar…</option>
+              {RESPONSABLES_INVESTIGACION.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-brand-700 text-white grid place-items-center text-[14px] font-bold shrink-0">
             {investigatorName.split(" ").map((p) => p[0]).slice(0, 2).join("")}
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-ink truncate">{investigatorName}</p>
-            <p className="text-[12px] text-ink-quiet mt-0.5">Analista de Seguridad Operativa</p>
+            <p className="text-[12px] text-ink-quiet mt-0.5">Seguridad Operativa</p>
             <div className="mt-1.5"><Pill tone="brand" dot>Asignado</Pill></div>
           </div>
         </div>
       </Card>
 
-      {/* 2. Jefe Responsable del Plan */}
-      <Card className="p-5">
-        <div className="flex items-center gap-2.5 mb-3">
-          <div className="h-9 w-9 rounded-lg bg-info-soft text-info-ink grid place-items-center"><Briefcase className="h-4.5 w-4.5" /></div>
-          <div>
-            <p className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Jefe Responsable del Plan</p>
-            <p className="text-[13px] font-bold text-ink leading-tight">Quien ejecutará el plan</p>
-          </div>
-        </div>
-        {c.assignee ? (
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-info text-white grid place-items-center text-[14px] font-bold shrink-0">
-              {c.assignee.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-ink truncate">{c.assignee}</p>
-              <p className="text-[12px] text-ink-quiet mt-0.5">Jefe de {jefeAreaLabel}</p>
-              <div className="mt-1.5"><Pill tone="info" dot>Responsable del plan</Pill></div>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-lg bg-surface border border-dashed border-line p-4 text-center">
-            <p className="text-[12.5px] text-ink-quiet">Se asignará al crear el Plan de Acción</p>
-          </div>
-        )}
-      </Card>
-
-      {/* 3. Trabajadores Involucrados */}
+      {/* 2. Trabajadores Involucrados */}
       <Card className="p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2.5">
@@ -1130,7 +1119,30 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
     <div className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Responsable que elaboró el plan" required>
-          <Input value={elaboratedBy} onChange={(e) => setElaboratedBy(e.target.value)} />
+          <Select
+            value={RESPONSABLES_INVESTIGACION.includes(elaboratedBy) ? elaboratedBy : elaboratedBy === "" ? "" : "__otro__"}
+            onChange={(e) => {
+              if (e.target.value === "__otro__") {
+                setElaboratedBy("");
+              } else {
+                setElaboratedBy(e.target.value);
+              }
+            }}
+          >
+            <option value="">Seleccionar responsable…</option>
+            {RESPONSABLES_INVESTIGACION.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+            <option value="__otro__">Otro (escribir…)</option>
+          </Select>
+          {!RESPONSABLES_INVESTIGACION.includes(elaboratedBy) && (
+            <Input
+              className="mt-2"
+              value={elaboratedBy}
+              onChange={(e) => setElaboratedBy(e.target.value)}
+              placeholder="Escriba el nombre del responsable…"
+            />
+          )}
         </Field>
         <Field label="Tipo de acción" required>
           <Select value={actionType} onChange={(e) => setActionType(e.target.value)}>

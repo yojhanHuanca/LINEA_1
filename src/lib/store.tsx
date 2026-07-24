@@ -222,6 +222,7 @@ interface StoreValue {
   // ETAPA 2 — Evaluación (SO)
   saveEvaluation: (caseId: string, ev: EvaluationInput) => void;
   sendToInvestigation: (caseId: string) => void;
+  setInvestigator: (caseId: string, name: string) => void;
 
   // ETAPA 3 — Investigación (SO)
   saveInvestigation: (caseId: string, inv: Investigation) => void;
@@ -462,6 +463,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       mutate(caseId, (c) =>
         pushTimeline({ ...c, stage: "investigacion" }, { kind: "investigacion", actor: SAFETY_USER.name, actorRole: "seguridad", title: "Caso enviado a Investigación" })
       );
+    },
+    [mutate]
+  );
+
+  const setInvestigator = useCallback(
+    (caseId: string, name: string) => {
+      mutate(caseId, (c) => ({ ...c, investigator: name }));
     },
     [mutate]
   );
@@ -1014,6 +1022,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addReviewObservation,
     saveEvaluation,
     sendToInvestigation,
+    setInvestigator,
     saveInvestigation,
     addInvestigationEvidence,
     submitActionPlan,

@@ -462,13 +462,26 @@ function ReceptionStage({ c, store }: { c: Store["cases"][number]; store: Store 
 }
 
 /* ─── ETAPA 2 — Evaluación ─── */
+const PRESET_CLASSIFICATIONS: string[] = [
+  "Reporte Voluntario",
+  "Accidente",
+  "No conformidad",
+  "Observación",
+  ...Object.values(SUBTIPO_SOP_LABELS).map((s) => `Hallazgo · ${s}`),
+  ...Object.values(TIPO_INCIDENTE_LABELS).map((s) => `Incidente · ${s}`),
+];
+
 function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store }) {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>(c.riskLevel);
   const [classification, setClassification] = useState(c.evaluation?.classification ?? "");
   const [requiresInvestigation, setRequiresInvestigation] = useState(c.evaluation?.requiresInvestigation ?? true);
   const [observations, setObservations] = useState(c.evaluation?.observations ?? "");
 
-  const canSave = classification.trim().length > 0;
+  // Valor limpio para guardar (sin el prefijo __otro__:)
+  const cleanClassification = classification.startsWith("__otro__:")
+    ? classification.slice(8).trim()
+    : classification.trim();
+  const canSave = cleanClassification.length > 0;
   const gravityFromRisk = riskToPriority(riskLevel);
 
   return (
@@ -493,7 +506,16 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
       </Field>
 
       <Field label="Clasificación del caso" required>
-        <Select value={classification} onChange={(e) => setClassification(e.target.value)}>
+        <Select
+          value={classification.startsWith("__otro__:") ? "__otro__" : classification === "" || PRESET_CLASSIFICATIONS.includes(classification) ? classification : "__otro__"}
+          onChange={(e) => {
+            if (e.target.value === "__otro__") {
+              setClassification("__otro__:");
+            } else {
+              setClassification(e.target.value);
+            }
+          }}
+        >
           <option value="">Seleccionar clasificación…</option>
           <optgroup label="Hallazgo">
             {(Object.keys(SUBTIPO_SOP_LABELS) as SubtipoSOP[]).map((s) => (
@@ -509,8 +531,17 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
           <option value="Accidente">Accidente</option>
           <option value="No conformidad">No conformidad</option>
           <option value="Observación">Observación</option>
-          <option value="Otro">Otro</option>
+          <option value="__otro__">Otro (escribir…) </option>
         </Select>
+        {classification.startsWith("__otro__:") && (
+          <Input
+            className="mt-2"
+            value={classification.slice(8)}
+            onChange={(e) => setClassification(`__otro__:${e.target.value}`)}
+            placeholder="Escriba la clasificación personalizada…"
+            autoFocus
+          />
+        )}
       </Field>
 
       <Field label="¿Requiere investigación?">
@@ -531,7 +562,7 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
       </Field>
 
       <div className="pt-3 border-t border-line-soft flex items-center justify-end gap-2">
-        <Button size="sm" disabled={!canSave} onClick={() => store.saveEvaluation(c.id, { gravity: gravityFromRisk, riskLevel, classification: classification.trim(), requiresInvestigation, observations: observations.trim() })}>
+        <Button size="sm" disabled={!canSave} onClick={() => store.saveEvaluation(c.id, { gravity: gravityFromRisk, riskLevel, classification: cleanClassification, requiresInvestigation, observations: observations.trim() })}>
           <Check className="h-4 w-4" /> {requiresInvestigation ? "Guardar y pasar a Investigación" : "Guardar y pasar a Plan de Acción"}
         </Button>
       </div>

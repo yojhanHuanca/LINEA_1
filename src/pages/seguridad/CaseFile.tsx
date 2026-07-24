@@ -84,6 +84,8 @@ import {
   type Priority,
   type RiskLevel,
   type Stage,
+  type SubtipoSOP,
+  type TipoIncidenteOperativo,
   type User,
 } from "@/lib/types";
 import { cn, formatDate, formatDateTime, relativeTime, slaState, daysUntil, uid } from "@/lib/utils";
@@ -491,7 +493,24 @@ function EvaluationForm({ c, store }: { c: Store["cases"][number]; store: Store 
       </Field>
 
       <Field label="Clasificación del caso" required>
-        <Input value={classification} onChange={(e) => setClassification(e.target.value)} placeholder="Ej. Falla eléctrica — riesgo de incendio" />
+        <Select value={classification} onChange={(e) => setClassification(e.target.value)}>
+          <option value="">Seleccionar clasificación…</option>
+          <optgroup label="Hallazgo">
+            {(Object.keys(SUBTIPO_SOP_LABELS) as SubtipoSOP[]).map((s) => (
+              <option key={s} value={`Hallazgo · ${SUBTIPO_SOP_LABELS[s]}`}>Hallazgo · {SUBTIPO_SOP_LABELS[s]}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Incidente">
+            {(Object.keys(TIPO_INCIDENTE_LABELS) as TipoIncidenteOperativo[]).map((s) => (
+              <option key={s} value={`Incidente · ${TIPO_INCIDENTE_LABELS[s]}`}>Incidente · {TIPO_INCIDENTE_LABELS[s]}</option>
+            ))}
+          </optgroup>
+          <option value="Reporte Voluntario">Reporte Voluntario</option>
+          <option value="Accidente">Accidente</option>
+          <option value="No conformidad">No conformidad</option>
+          <option value="Observación">Observación</option>
+          <option value="Otro">Otro</option>
+        </Select>
       </Field>
 
       <Field label="¿Requiere investigación?">

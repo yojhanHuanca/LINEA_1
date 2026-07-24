@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import type { Priority, Stage } from "@/lib/types";
-import { PRIORITY_LABELS, STAGE_LABELS, STAGE_STATUS } from "@/lib/types";
+import type { Priority, Stage, RiskLevel } from "@/lib/types";
+import { PRIORITY_LABELS, STAGE_LABELS, STAGE_STATUS, RISK_LABELS, riskCategory, RISK_CATEGORY_TONE, RISK_CATEGORY_LABELS } from "@/lib/types";
 
 interface PillProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: "neutral" | "brand" | "critical" | "warning" | "info" | "success";
@@ -54,6 +54,17 @@ export function PriorityPill({ priority }: { priority: Priority }) {
   return (
     <Pill tone={PRIORITY_TONE[priority]} dot>
       {PRIORITY_LABELS[priority]}
+    </Pill>
+  );
+}
+
+export function RiskPill({ risk, showCategory = false, className }: { risk: RiskLevel; showCategory?: boolean; className?: string }) {
+  const cat = riskCategory(risk);
+  const tone = RISK_CATEGORY_TONE[cat];
+  const label = showCategory ? `${risk} · ${RISK_CATEGORY_LABELS[cat]}` : risk;
+  return (
+    <Pill tone={tone} dot className={className}>
+      {label}
     </Pill>
   );
 }

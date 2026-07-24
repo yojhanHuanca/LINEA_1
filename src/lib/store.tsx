@@ -27,7 +27,10 @@ import {
   type TimelineEvent,
   type User,
   type UserRole,
+  type RiskLevel,
   slaDaysFor,
+  riskCategory,
+  slaDaysForRisk,
 } from "./types";
 import { SEED_CASES, SEED_NOTIFICATIONS } from "./seed";
 import { SEED_USERS, SEED_SYNC_LOGS, NEW_USERS_FROM_EXCEL } from "./seedUsers";
@@ -54,10 +57,15 @@ function loadCases(): CaseFile[] {
   const raw = load<CaseFile[] | null>(CASES_KEY, null);
   if (!raw || !Array.isArray(raw) || raw.length === 0) return SEED_CASES;
   const first = raw[0];
-  if (first && typeof first.id === "string" && first.id.startsWith("CASO-")) {
+  // Limpiar formatos muy viejos (CASO- o EXP-)
+  if (first && typeof first.id === "string" && (first.id.startsWith("CASO-") || first.id.startsWith("EXP-"))) {
     try { localStorage.removeItem(CASES_KEY); localStorage.removeItem(SEQ_KEY); } catch { /* ignore */ }
     return SEED_CASES;
   }
+  // Migrar prioridad → riskLevel si falta
+  const prioToRisk: Record<string, RiskLevel> = {
+    critica: "1A", alta: "2C", media: "3C", baja: "4C",
+  };
   // Migrate old stages to new 7-stage flow
   const stageMap: Record<string, Stage> = {
     nuevo: "recepcion",
@@ -74,6 +82,7 @@ function loadCases(): CaseFile[] {
   return raw.map((c) => ({
     ...c,
     stage: stageMap[c.stage] ?? c.stage,
+    riskLevel: c.riskLevel ?? prioToRisk[c.priority] ?? "3C",
     actionPlan: c.actionPlan
       ? {
           ...c.actionPlan,
@@ -155,6 +164,7 @@ export interface NewReportInput {
   date: string;
   time: string;
   priority: CaseFile["priority"];
+  riskLevel: CaseFile["riskLevel"];
   evidence: Evidence[];
   reporter: string;
   anonymous?: boolean;
@@ -320,7 +330,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSeq(nextSeq);
       const id = caseCodeFromSeq(nextSeq);
       const sla = new Date();
-      sla.setDate(sla.getDate() + slaDaysFor(input.priority));
+      sla.setDate(sla.getDate() + slaDaysForRisk(input.riskLevel));
       const newCase: CaseFile = {
         id,
         type: input.type,
@@ -333,6 +343,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         date: input.date,
         time: input.time,
         priority: input.priority,
+        riskLevel: input.riskLevel,
         stage: "recepcion",
         reporter: input.reporter,
         reporterRole: "reportante",
@@ -345,7 +356,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             actor: input.reporter,
             actorRole: "reportante",
             title: "Reporte registrado por trabajador",
-            detail: `Expediente ${id} creado. Enviado a la bandeja de Seguridad Operativa.`,
+            detail: `SOP ${id} creado. Enviado a la bandeja de Seguridad Operativa.`,
           },
         ],
         slaDueDate: sla.toISOString(),
@@ -354,10 +365,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCases((prev) => [newCase, ...prev]);
       pushNotification({
         caseId: id,
-        title: "Nuevo expediente en bandeja",
+        title: "Nuevo SOP en bandeja",
         body: `${id} · ${input.title}`,
         audience: "seguridad",
-        kind: input.priority === "critica" ? "critical" : "info",
+        kind: riskCategory(input.riskLevel) === "inaceptable" ? "critical" : "info",
       });
       return newCase;
     },

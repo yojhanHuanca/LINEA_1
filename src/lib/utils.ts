@@ -13,7 +13,7 @@ export function uid(prefix = "id"): string {
 }
 
 export function caseCodeFromSeq(seq: number): string {
-  return `EXP-2026-${String(seq).padStart(5, "0")}`;
+  return `SOP-${String(seq).padStart(2, "0")}-2026`;
 }
 
 export function nowISO(): string {

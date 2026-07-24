@@ -150,6 +150,7 @@ export function NewReportWizard() {
       date: new Date().toISOString().slice(0, 10),
       time: new Date().toTimeString().slice(0, 5),
       priority: "media",
+      riskLevel: "3C",
       evidence: form.evidence,
       reporter: reporterName,
       anonymous: form.anonymous,
@@ -157,10 +158,7 @@ export function NewReportWizard() {
       contactEmail: form.anonymous ? undefined : form.contactEmail.trim() || undefined,
       contactPhone: form.anonymous ? undefined : form.contactPhone.trim() || undefined,
     });
-    // Generar código SOP-XXXX-2026
-    const seqNum = newCase.id.match(/(\d+)$/)?.[1] ?? "0001";
-    const sopCode = `SOP-${seqNum.padStart(4, "0")}-2026`;
-    setSuccess(sopCode);
+    setSuccess(newCase.id);
   };
 
   // ─── Pantalla de éxito ───

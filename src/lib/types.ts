@@ -1,21 +1,82 @@
 // SIGMA L1 — Domain types
 // Sistema de Gestión de Seguridad Operativa · Línea 1 del Metro de Lima
+// Campos alineados con planilla SOP oficial de Seguridad Operativa
 
 export type Role = "reportante" | "seguridad" | "jefe";
 
-export type EventType =
-  | "accidente"
-  | "incidente"
-  | "observacion"
-  | "condicion_insegura"
-  | "acto_inseguro"
-  | "falla_operativa"
-  | "riesgo"
-  | "hallazgo"
-  | "incumplimiento"
-  | "otro";
+// ─── Matriz de Riesgo 5×5 (reemplaza prioridad) ───
+// 1A-1E = Inaceptable (rojo) · 2A-2E = No deseable (naranja)
+// 3A-3E = Aceptable con revisión (amarillo) · 4A-4E = Aceptable (verde)
+export type RiskLevel =
+  | "1A" | "1B" | "1C" | "1D" | "1E"
+  | "2A" | "2B" | "2C" | "2D" | "2E"
+  | "3A" | "3B" | "3C" | "3D" | "3E"
+  | "4A" | "4B" | "4C" | "4D" | "4E";
 
+export type RiskCategory = "inaceptable" | "no_deseable" | "aceptable_revision" | "aceptable";
+
+export const RISK_LABELS: Record<RiskLevel, string> = {
+  "1A": "1A — Inaceptable", "1B": "1B — Inaceptable", "1C": "1C — Inaceptable",
+  "1D": "1D — Inaceptable", "1E": "1E — Inaceptable",
+  "2A": "2A — Inaceptable", "2B": "2B — Inaceptable",
+  "2C": "2C — No deseable", "2D": "2D — Aceptable c/revisión", "2E": "2E — Aceptable c/revisión",
+  "3A": "3A — No deseable", "3B": "3B — No deseable",
+  "3C": "3C — Aceptable c/revisión", "3D": "3D — Aceptable c/revisión", "3E": "3E — Aceptable c/revisión",
+  "4A": "4A — Aceptable c/revisión", "4B": "4B — Aceptable",
+  "4C": "4C — Aceptable", "4D": "4D — Aceptable", "4E": "4E — Aceptable",
+};
+
+export function riskCategory(r: RiskLevel): RiskCategory {
+  const n = parseInt(r[0]);
+  if (n === 1) return "inaceptable";
+  if (n === 2) return r[1] <= "B" ? "inaceptable" : r[1] === "C" ? "no_deseable" : "aceptable_revision";
+  if (n === 3) return r[1] <= "B" ? "no_deseable" : "aceptable_revision";
+  return r[1] === "A" ? "aceptable_revision" : "aceptable";
+}
+
+export const RISK_CATEGORY_LABELS: Record<RiskCategory, string> = {
+  inaceptable: "Inaceptable",
+  no_deseable: "No deseable",
+  aceptable_revision: "Aceptable con revisión",
+  aceptable: "Aceptable",
+};
+
+export const RISK_CATEGORY_TONE: Record<RiskCategory, "critical" | "warning" | "info" | "brand"> = {
+  inaceptable: "critical",
+  no_deseable: "warning",
+  aceptable_revision: "info",
+  aceptable: "brand",
+};
+
+export const RISK_CATEGORY_COLOR: Record<RiskCategory, string> = {
+  inaceptable: "#ef4444",
+  no_deseable: "#f97316",
+  aceptable_revision: "#eab308",
+  aceptable: "#22c55e",
+};
+
+// SLA basado en categoría de riesgo
+export const RISK_SLA_DAYS: Record<RiskCategory, number> = {
+  inaceptable: 3,
+  no_deseable: 7,
+  aceptable_revision: 14,
+  aceptable: 21,
+};
+
+export function slaDaysForRisk(r: RiskLevel): number {
+  return RISK_SLA_DAYS[riskCategory(r)];
+}
+
+// Compatibilidad: mapear RiskLevel a Priority interna para no romper código viejo
 export type Priority = "critica" | "alta" | "media" | "baja";
+
+export function riskToPriority(r: RiskLevel): Priority {
+  const cat = riskCategory(r);
+  if (cat === "inaceptable") return "critica";
+  if (cat === "no_deseable") return "alta";
+  if (cat === "aceptable_revision") return "media";
+  return "baja";
+}
 
 export const SLA_DAYS: Record<Priority, number> = {
   critica: 3,
@@ -27,6 +88,286 @@ export const SLA_DAYS: Record<Priority, number> = {
 export function slaDaysFor(priority: Priority): number {
   return SLA_DAYS[priority];
 }
+
+// ─── Tipo de SOP ───
+export type TipoSOP = "hallazgo" | "incidente" | "reporte_voluntario" | "accidente";
+
+export const TIPO_SOP_LABELS: Record<TipoSOP, string> = {
+  hallazgo: "Hallazgo",
+  incidente: "Incidente",
+  reporte_voluntario: "Reporte Voluntario",
+  accidente: "Accidente",
+};
+
+// ─── Subtipo SOP ───
+export type SubtipoSOP =
+  | "atrapamiento" | "caida" | "caida_rotura_linea" | "condiciones_entorno"
+  | "descarrilamiento" | "ejecucion_inadecuada" | "error_sistemas_tren"
+  | "falta_control_herramientas" | "falta_mantenimiento" | "falta_instrucciones"
+  | "falta_comunicacion" | "incumplimiento_operativo" | "indisponibilidad_equipos"
+  | "instalaciones_deficientes" | "movimiento_equipos_aux" | "objeto_extraño"
+  | "talonamiento" | "otro";
+
+export const SUBTIPO_SOP_LABELS: Record<SubtipoSOP, string> = {
+  atrapamiento: "Atrapamiento",
+  caida: "Caída",
+  caida_rotura_linea: "Caída o rotura de línea de contacto",
+  condiciones_entorno: "Condiciones del entorno",
+  descarrilamiento: "Descarrilamiento",
+  ejecucion_inadecuada: "Ejecución inadecuada de procedimiento",
+  error_sistemas_tren: "Error en funcionamiento de sistemas de tren",
+  falta_control_herramientas: "Falta/deficiente control de herramientas y equipos",
+  falta_mantenimiento: "Falta/deficientes programas de mantenimiento",
+  falta_instrucciones: "Falta/inadecuadas instrucciones de equipamientos",
+  falta_comunicacion: "Falta o deficiencia de comunicación",
+  incumplimiento_operativo: "Incumplimiento Operativo",
+  indisponibilidad_equipos: "Indisponibilidad/mal funcionamiento de equipos",
+  instalaciones_deficientes: "Instalaciones deficientes",
+  movimiento_equipos_aux: "Movimiento de equipos auxiliares",
+  objeto_extraño: "Objeto extraño en vía",
+  talonamiento: "Talonamiento",
+  otro: "Otro",
+};
+
+// ─── Procedencia ───
+export type Procedencia = "auditoria_ssoma" | "incidencias" | "reporte_voluntario" | "otro";
+
+export const PROCEDENCIA_LABELS: Record<Procedencia, string> = {
+  auditoria_ssoma: "Auditoría SSOMA",
+  incidencias: "Incidencias",
+  reporte_voluntario: "Reporte Voluntario",
+  otro: "Otro",
+};
+
+// ─── Estado de Hallazgo ───
+export type EstadoHallazgo = "cerrado" | "en_proceso";
+
+export const ESTADO_HALLAZGO_LABELS: Record<EstadoHallazgo, string> = {
+  cerrado: "Cerrado",
+  en_proceso: "En Proceso",
+};
+
+// ─── Tipo (No conformidad / Observación) ───
+export type TipoHallazgo = "no_conformidad" | "observacion";
+
+export const TIPO_HALLAZGO_LABELS: Record<TipoHallazgo, string> = {
+  no_conformidad: "No conformidad",
+  observacion: "Observación",
+};
+
+// ─── Áreas SOP (15 áreas reales del Excel) ───
+export type AreaSOP =
+  | "capacitacion" | "control_calidad" | "gh" | "gi" | "ingenieria"
+  | "mantenimiento" | "mr" | "operaciones" | "pco" | "proyectos"
+  | "seguridad_operativa" | "ssoma" | "teq" | "vias_obras";
+
+export const AREA_SOP_LABELS: Record<AreaSOP, string> = {
+  capacitacion: "Capacitación",
+  control_calidad: "Control de Calidad",
+  gh: "GH",
+  gi: "GI",
+  ingenieria: "Ingeniería",
+  mantenimiento: "Mantenimiento",
+  mr: "MR",
+  operaciones: "Operaciones",
+  pco: "PCO",
+  proyectos: "Proyectos",
+  seguridad_operativa: "Seguridad Operativa",
+  ssoma: "SSOMA",
+  teq: "TEQ",
+  vias_obras: "Vías y Obras",
+};
+
+// ─── Responsables de Hallazgo/Investigación/RSO (17 personas) ───
+export const RESPONSABLES_INVESTIGACION: string[] = [
+  "Antonio Rebaza Lizaraso",
+  "Carlos Barreda Torres",
+  "Emerson Navarrete Sotelo",
+  "Gabriel Ferreira Acosta",
+  "Hector Hinostroza Mansilla",
+  "Jesus Alejandro Vielma Ochoa",
+  "Jorge Arévalo Angeles",
+  "Jose Pacombia Pocohuanca",
+  "Juan Castro Velazco",
+  "Karen Peralta Canchis",
+  "Louana Martel Ramos",
+  "Maximo Jesús Alvarez Garcia",
+  "Roberto Pomar Roman",
+  "Ruben Francisco Luque Carbajal",
+  "Teófilo De La Mata Luque",
+  "Victor Ruiz Micha",
+  "Anderson Sandoval Ramirez",
+];
+
+// ─── Responsables de Plan de Acción (6 personas) ───
+export const RESPONSABLES_PLAN: string[] = [
+  "Alejandro Vielma",
+  "Amanda Ridoutt Orozco",
+  "Antonio Rebaza Lizaraso",
+  "Carlos Barreda Torres",
+  "Cesar Malca Yañez",
+  "Christian Oliva",
+];
+
+// ─── Tipo de Incidente Operativo (20 tipos) ───
+export type TipoIncidenteOperativo =
+  | "amenaza_suicida" | "arrollamiento" | "atrapamiento" | "atrapamiento_dj"
+  | "atropello" | "caida_estacion" | "caida_estacion_dj" | "colision_mr_obstaculo"
+  | "desalojo" | "descarrilamiento" | "impacto_fisico" | "impacto_fisico_dj"
+  | "ingreso_via" | "intento_suicidio" | "no_abre_puertas" | "no_para_estacion"
+  | "otro_incidente" | "parada_incorrecta" | "rotura_catenaria" | "talonamiento";
+
+export const TIPO_INCIDENTE_LABELS: Record<TipoIncidenteOperativo, string> = {
+  amenaza_suicida: "Amenaza suicida",
+  arrollamiento: "Arrollamiento",
+  atrapamiento: "Atrapamiento",
+  atrapamiento_dj: "Atrapamiento-DJ",
+  atropello: "Atropello",
+  caida_estacion: "Caída en estación",
+  caida_estacion_dj: "Caída en estación-DJ",
+  colision_mr_obstaculo: "Colisión MR-Obstáculo",
+  desalojo: "Desalojo",
+  descarrilamiento: "Descarrilamiento",
+  impacto_fisico: "Impacto físico",
+  impacto_fisico_dj: "Impacto físico-DJ",
+  ingreso_via: "Ingreso a la vía",
+  intento_suicidio: "Intento de suicidio",
+  no_abre_puertas: "No abre puertas",
+  no_para_estacion: "No para en estación",
+  otro_incidente: "Otro",
+  parada_incorrecta: "Parada incorrecta",
+  rotura_catenaria: "Rotura de catenaria",
+  talonamiento: "Talonamiento",
+};
+
+// ─── Ubicación ───
+export type Ubicacion =
+  | "andén" | "ascensor" | "escalera_electrica" | "escalera_fija" | "escalera_interna"
+  | "estación" | "explanada" | "hall" | "interestacional" | "pasarela"
+  | "patio" | "sshh" | "tren" | "zona_no_paga";
+
+export const UBICACION_LABELS: Record<Ubicacion, string> = {
+  andén: "ANDEN",
+  ascensor: "ASCENSOR",
+  escalera_electrica: "ESCALERA ELÉCTRICA",
+  escalera_fija: "ESCALERA FIJA",
+  escalera_interna: "ESCALERA INTERNA",
+  estación: "ESTACIÓN",
+  explanada: "EXPLANADA",
+  hall: "HALL",
+  interestacional: "INTERESTACIONAL",
+  pasarela: "PASARELA",
+  patio: "PATIO",
+  sshh: "SERVICIOS HIGIÉNICOS",
+  tren: "TREN",
+  zona_no_paga: "ZONA NO PAGA",
+};
+
+// ─── Lugar de Incidente (códigos de estación del Excel) ───
+export type LugarIncidente =
+  | "VES" | "PIN" | "PUM" | "VMA" | "MAU" | "SJU" | "ATO" | "JCH"
+  | "AYA" | "CAB" | "ANG" | "SBS" | "CUL" | "NAR" | "GAM" | "MIG"
+  | "ELA" | "PRE" | "CAA" | "PIR" | "JAR" | "POS" | "SCA" | "SMA"
+  | "SRO" | "BAY" | "EXTERIORES";
+
+export const LUGAR_INCIDENTE_LABELS: Record<LugarIncidente, string> = {
+  VES: "Villa El Salvador", PIN: "Pueblo Nuevo", PUM: "Pumacahua",
+  VMA: "Villa María", MAU: "María Auxiliadora", SJU: "San Juan",
+  ATO: "Atocongo", JCH: "Jorge Chávez", AYA: "Ayacucho",
+  CAB: "Cabitos", ANG: "El Ángel", SBS: "San Borja Sur",
+  CUL: "Culebras", NAR: "Naranjal", GAM: "Gamarra", MIG: "Miguel Grau",
+  ELA: "El Ángel", PRE: "Presbítero", CAA: "Caja de Agua",
+  PIR: "Pirámide del Sol", JAR: "Jardín", POS: "Posta",
+  SCA: "San Carlos", SMA: "Santa María", SRO: "San Roque",
+  BAY: "Bayóvar", EXTERIORES: "Exteriores",
+};
+
+// ─── Modelo MR ───
+export type ModeloMR = "ALSTOM" | "ANSALDO" | "N/A" | "VFA";
+
+export const MODELO_MR_LABELS: Record<ModeloMR, string> = {
+  ALSTOM: "ALSTOM",
+  ANSALDO: "ANSALDO",
+  "N/A": "N/A",
+  VFA: "VFA",
+};
+
+// ─── Nro. MR (T1-T44 + vehículos auxiliares) ───
+export const NRRO_MR_OPTIONS: string[] = [
+  "N/A",
+  ...Array.from({ length: 44 }, (_, i) => `T${i + 1}`),
+  "V-BIVIAL", "V-DRESINA", "V-GRECO", "V-GRUA", "VH-PLATAFORMA", "V-PLATAFORMA",
+];
+
+// ─── Personal o Falla Involucrado ───
+export type PersonalFalla =
+  | "agente_estación" | "conductor" | "falla_tren" | "ios" | "jr_abierto_acat"
+  | "jr_acat_frenos" | "jr_acat_ventilacion" | "mr" | "otro_personal" | "pasajero"
+  | "limpieza" | "tecnico" | "tercero" | "transeunte" | "avp";
+
+export const PERSONAL_FALLA_LABELS: Record<PersonalFalla, string> = {
+  agente_estación: "Agente de estación",
+  conductor: "Conductor",
+  falla_tren: "Falla de tren",
+  ios: "IOS",
+  jr_abierto_acat: "JR abierto y/o ACAT",
+  jr_acat_frenos: "JR, ACAT y/o frenos cerrados",
+  jr_acat_ventilacion: "JR, ACAT y/o falta de ventilación",
+  mr: "MR",
+  otro_personal: "Otro",
+  pasajero: "Pasajero",
+  limpieza: "Personal de limpieza",
+  tecnico: "Técnico",
+  tercero: "Tercero",
+  transeunte: "Transeúnte",
+  avp: "AVP",
+};
+
+// ─── Tipo Causa ───
+export type TipoCausa =
+  | "carrera_comercial_bay" | "factor_externo" | "falla_operacional" | "falla_tecnica";
+
+export const TIPO_CAUSA_LABELS: Record<TipoCausa, string> = {
+  carrera_comercial_bay: "Carrera comercial a bay",
+  factor_externo: "Factor externo",
+  falla_operacional: "Falla operacional",
+  falla_tecnica: "Falla técnica",
+};
+
+// ─── Posible Causa (40+ opciones) ───
+export const POSIBLE_CAUSA_OPTIONS: string[] = [
+  "Actos delictivos", "Amenaza suicida", "Caída", "Confusión", "Cruzar",
+  "Distracción", "Eléctrico", "Empujado", "En investigación", "Error de humano",
+  "Errores de manejo u operación", "Estado etílico",
+  "Estrés térmico en el punto de contacto", "Falla de tren, pedido de Trabajo 656150",
+  "Fatiga y somnolencia", "Incumplimiento Videa", "Intento de suicidio",
+  "IOS 225, 245", "JR ABIERTO y/o ACAT", "JR abierto, ACAT y falta de ventilación",
+  "Lubricación", "Lubricación de curvas", "Mala comunicación",
+  "Manejo o conducción", "Mécanico", "Miccionar",
+  "No cumplió procedimiento o método establecido", "No identificada",
+  "No se cumplió procedimiento", "Obstrucción", "Omisión de procedimientos",
+  "Otro", "Problemas mentales", "Problemas mentales, enfermedades",
+  "Recoger objeto", "Retiro de animal en la vía",
+  "Salida/entrada a destiempo", "Salir", "Suicidio",
+  "Transeúnte en la vía", "Tropiezo", "Uso de celular/distraído",
+];
+
+// ─── Rango Horario ───
+export const RANGO_HORARIO_OPTIONS: string[] = [
+  "00:00 - 01:59", "02:00 - 03:59", "04:00 - 05:59",
+  "06:00 - 07:59", "08:00 - 09:59", "10:00 - 11:59",
+  "12:00 - 13:59", "14:00 - 15:59", "16:00 - 17:59",
+  "18:00 - 19:59", "20:00 - 21:59", "22:00 - 23:59",
+];
+
+// ─── Tipo de Vía ───
+export type TipoVia = "impar" | "par";
+
+// ─── Dirección de Vía ───
+export type DireccionVia = "legal" | "N/A";
+
+// ─── Estado Plan de Acción ───
+export type EstadoPlan = "cerrado" | "pendiente";
 
 export type Area =
   | "mantenimiento"
@@ -117,7 +458,7 @@ export interface ExecutionUpdate {
 }
 
 export interface CaseFile {
-  id: string; // CASO-2026-001
+  id: string; // SOP-01-2026
   type: EventType;
   title: string;
   description: string;
@@ -127,7 +468,8 @@ export interface CaseFile {
   location: string;
   date: string; // ISO date
   time: string;
-  priority: Priority;
+  priority: Priority; // derivado de riskLevel (compatibilidad)
+  riskLevel: RiskLevel; // matriz 1A-4E (reemplaza prioridad)
   stage: Stage;
   reporter: string;
   reporterRole: Role;
@@ -135,7 +477,7 @@ export interface CaseFile {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
-  investigator?: string; // Analista SO asignado a la investigación
+  investigator?: string;
   assignee?: string;
   assigneeArea?: Area;
   assignmentPriority?: Priority;
@@ -187,6 +529,51 @@ export interface CaseFile {
   pendingInfoRequest?: {
     question: string;
     requestedAt: string;
+  };
+
+  // ─── Campos SOP (planilla oficial) ───
+  sop?: {
+    fechaHallazgo: string;
+    fechaEvento: string;
+    estadoHallazgo: EstadoHallazgo;
+    procedencia: Procedencia;
+    tipoHallazgo: TipoHallazgo;
+    responsableInvestigacion: string;
+    tipoSOP: TipoSOP;
+    subtipoSOP: SubtipoSOP;
+    peligro: string;
+    consecuencia: string;
+    analisisRiesgo: RiskLevel;
+    acr: string;
+    anexos?: string;
+    // Plan de acción
+    planCodigo?: string;
+    planDescripcion?: string;
+    planArea?: AreaSOP;
+    planResponsable?: string;
+    planEstado?: EstadoPlan;
+    planFecha?: string;
+    planFechaProgramada?: string;
+    planDiasAbierto?: string;
+  };
+  // ─── Evento operativo ───
+  evento?: {
+    rangoHorario?: string;
+    tipoIncidenteOperativo?: TipoIncidenteOperativo;
+    descripcionEvento?: string;
+    ubicacion?: Ubicacion;
+    tipoVia?: TipoVia;
+    direccionVia?: DireccionVia;
+    lugarIncidente?: LugarIncidente;
+    modeloMR?: ModeloMR;
+    nroMR?: string;
+    nroCarrera?: string;
+    personalFalla?: PersonalFalla;
+    tipoCausa?: TipoCausa;
+    posibleCausa?: string;
+    informacionAdicional?: string;
+    camaraMonitoreada?: string;
+    demora?: string;
   };
 }
 

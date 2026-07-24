@@ -44,7 +44,7 @@ function ev(
 
 export const SEED_CASES: CaseFile[] = [
   {
-    id: "EXP-2026-00014",
+    id: "SOP-14-2026",
     type: "accidente",
     title: "Caída de personal en plataforma de estación Cabitos",
     description:
@@ -57,6 +57,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(2, 7, 35).slice(0, 10),
     time: "07:35",
     priority: "critica",
+        riskLevel: "1A",
     stage: "investigacion",
     reporter: "Carlos Núñez",
     reporterRole: "reportante",
@@ -76,7 +77,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(2),
   },
   {
-    id: "EXP-2026-00013",
+    id: "SOP-13-2026",
     type: "falla_operativa",
     title: "Falla intermitente en señalamiento tramo Atocongo–Pamplona",
     description:
@@ -88,6 +89,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(4, 8, 10).slice(0, 10),
     time: "08:10",
     priority: "alta",
+        riskLevel: "2C",
     stage: "investigacion",
     reporter: "Lucía Ramírez",
     reporterRole: "reportante",
@@ -117,7 +119,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(4),
   },
   {
-    id: "EXP-2026-00012",
+    id: "SOP-12-2026",
     type: "condicion_insegura",
     title: "Baranda perimetral suelta en andén estación Javier Prado",
     description:
@@ -129,6 +131,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(6, 14, 20).slice(0, 10),
     time: "14:20",
     priority: "media",
+        riskLevel: "3C",
     stage: "plan_accion",
     reporter: "Fernando Quispe",
     reporterRole: "reportante",
@@ -163,7 +166,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(6),
   },
   {
-    id: "EXP-2026-00011",
+    id: "SOP-11-2026",
     type: "acto_inseguro",
     title: "Personal sin EPP en zona de vías — San Juan",
     description:
@@ -175,6 +178,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(8, 22, 45).slice(0, 10),
     time: "22:45",
     priority: "alta",
+    riskLevel: "2C",
     stage: "ejecucion",
     reporter: "Sofía Erazo",
     reporterRole: "reportante",
@@ -220,7 +224,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(8),
   },
   {
-    id: "EXP-2026-00010",
+    id: "SOP-10-2026",
     type: "observacion",
     title: "Iluminación deficiente en paso peatonal — Estación Central",
     description:
@@ -232,6 +236,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(10, 19, 15).slice(0, 10),
     time: "19:15",
     priority: "baja",
+        riskLevel: "4C",
     stage: "verificacion",
     reporter: "Mario Chávez",
     reporterRole: "reportante",
@@ -278,7 +283,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(10),
   },
   {
-    id: "EXP-2026-00009",
+    id: "SOP-09-2026",
     type: "incidente",
     title: "Puerta de andén con cierre defectuoso — Pamplona",
     description:
@@ -290,6 +295,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(12, 11, 5).slice(0, 10),
     time: "11:05",
     priority: "alta",
+        riskLevel: "2C",
     stage: "cierre",
     reporter: "Diego Salas",
     reporterRole: "reportante",
@@ -339,7 +345,7 @@ export const SEED_CASES: CaseFile[] = [
     closedAt: daysAgo(1, 16, 0),
   },
   {
-    id: "EXP-2026-00008",
+    id: "SOP-08-2026",
     type: "riesgo",
     title: "Sobrecarga eléctrica en tablero de subestación Matellini",
     description:
@@ -351,6 +357,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(1, 6, 50).slice(0, 10),
     time: "06:50",
     priority: "critica",
+        riskLevel: "1A",
     stage: "recepcion",
     reporter: "Pedrio Aparicio",
     reporterRole: "reportante",
@@ -365,7 +372,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(1),
   },
   {
-    id: "EXP-2026-00007",
+    id: "SOP-07-2026",
     type: "hallazgo",
     title: "Documentación de procedimiento desactualizada — Comunicaciones",
     description:
@@ -377,6 +384,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(3, 10, 30).slice(0, 10),
     time: "10:30",
     priority: "media",
+        riskLevel: "3C",
     stage: "evaluacion",
     reporter: "M. Falcón",
     reporterRole: "seguridad",
@@ -390,7 +398,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(3),
   },
   {
-    id: "EXP-2026-00006",
+    id: "SOP-06-2026",
     type: "incumplimiento",
     title: "Incumplimiento de protocolo de bloqueo y etiquetado (LOTO)",
     description:
@@ -402,6 +410,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(5, 13, 40).slice(0, 10),
     time: "13:40",
     priority: "critica",
+        riskLevel: "1A",
     stage: "pendiente_info",
     reporter: "Hugo Reyna",
     reporterRole: "reportante",
@@ -421,7 +430,7 @@ export const SEED_CASES: CaseFile[] = [
     createdAt: daysAgo(5),
   },
   {
-    id: "EXP-2026-00015",
+    id: "SOP-15-2026",
     type: "falla_operativa",
     title: "Falla en sistema de ventilación de túnel — tramo Cabitos",
     description:
@@ -433,6 +442,7 @@ export const SEED_CASES: CaseFile[] = [
     date: daysAgo(6, 6, 30).slice(0, 10),
     time: "06:30",
     priority: "alta",
+    riskLevel: "2C",
     stage: "ejecucion",
     reporter: "Lucía Ramírez",
     reporterRole: "reportante",
@@ -495,7 +505,7 @@ export const SEED_CASES: CaseFile[] = [
 export const SEED_NOTIFICATIONS: Notification[] = [
   {
     id: uid("nt"),
-    caseId: "EXP-2026-00008",
+    caseId: "SOP-08-2026",
     title: "Caso crítico pendiente de revisión",
     body: "Sobrecarga eléctrica en Subestación Matellini — prioridad crítica.",
     at: daysAgo(1, 6, 55),
@@ -505,9 +515,9 @@ export const SEED_NOTIFICATIONS: Notification[] = [
   },
   {
     id: uid("nt"),
-    caseId: "EXP-2026-00014",
+    caseId: "SOP-14-2026",
     title: "Caso derivado a Mantenimiento",
-    body: "Se asignó EXP-2026-00014 a Jorge Salazar. Correo enviado.",
+    body: "Se asignó SOP-14-2026 a Jorge Salazar. Correo enviado.",
     at: daysAgo(1, 9, 30),
     read: false,
     audience: "both",
@@ -515,7 +525,7 @@ export const SEED_NOTIFICATIONS: Notification[] = [
   },
   {
     id: uid("nt"),
-    caseId: "EXP-2026-00006",
+    caseId: "SOP-06-2026",
     title: "Solicitud de información pendiente",
     body: "Seguridad Operativa solicita detallar personal y permiso de trabajo.",
     at: daysAgo(2, 9, 15),
@@ -525,9 +535,9 @@ export const SEED_NOTIFICATIONS: Notification[] = [
   },
   {
     id: uid("nt"),
-    caseId: "EXP-2026-00011",
+    caseId: "SOP-11-2026",
     title: "Plan de acción aprobado",
-    body: "El plan para EXP-2026-00011 fue aprobado. Inicia ejecución.",
+    body: "El plan para SOP-11-2026 fue aprobado. Inicia ejecución.",
     at: daysAgo(3, 9, 30),
     read: true,
     audience: "both",
@@ -535,9 +545,9 @@ export const SEED_NOTIFICATIONS: Notification[] = [
   },
   {
     id: uid("nt"),
-    caseId: "EXP-2026-00009",
+    caseId: "SOP-09-2026",
     title: "Caso cerrado",
-    body: "EXP-2026-00009 cerrado. Historial archivado.",
+    body: "SOP-09-2026 cerrado. Historial archivado.",
     at: daysAgo(1, 16, 5),
     read: false,
     audience: "seguridad",

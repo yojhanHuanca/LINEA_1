@@ -17,7 +17,7 @@ import { ReportanteShell } from "@/design-system/layout/ReportanteShell";
 import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
 import { Input } from "@/design-system/primitives/Input";
-import { StagePill, PriorityPill, Pill } from "@/design-system/primitives/Pill";
+import { StagePill, PriorityPill, Pill, RiskPill } from "@/design-system/primitives/Pill";
 import { EmptyState } from "@/design-system/primitives/Progress";
 import { EVENT_LABELS, STAGE_STATUS, STAGE_LABELS } from "@/lib/types";
 import { cn, formatDate, relativeTime, slaState, daysUntil } from "@/lib/utils";
@@ -156,7 +156,7 @@ export function MyReports() {
                     </div>
                     <div className="hidden md:flex flex-col items-end gap-1.5 shrink-0">
                       <StagePill stage={c.stage} />
-                      <PriorityPill priority={c.priority} />
+                      <RiskPill risk={c.riskLevel} />
                     </div>
                   </div>
 

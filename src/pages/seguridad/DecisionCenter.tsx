@@ -11,11 +11,11 @@ import { SegShell } from "@/design-system/layout/SegShell";
 import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
 import { Modal } from "@/design-system/primitives/Modal";
-import { Pill, PriorityPill } from "@/design-system/primitives/Pill";
+import { Pill, PriorityPill, RiskPill } from "@/design-system/primitives/Pill";
 import { Textarea } from "@/design-system/primitives/Input";
 import {
   AREA_LABELS, EVENT_LABELS, STAGE_LABELS,
-  type CaseFile,
+  type CaseFile, riskCategory,
 } from "@/lib/types";
 import { cn, formatDate, relativeTime, daysUntil, slaState } from "@/lib/utils";
 
@@ -38,7 +38,7 @@ export function DecisionCenter() {
     const prorrogas = cases.filter((c) => c.extensionRequest && !c.extensionRequest.decision);
 
     // 4. Casos críticos: prioridad critica y abiertos
-    const criticos = cases.filter((c) => c.priority === "critica" && c.stage !== "cierre" && c.stage !== "rechazado");
+    const criticos = cases.filter((c) => riskCategory(c.riskLevel) === "inaceptable" && c.stage !== "cierre" && c.stage !== "rechazado");
 
     // 5. Solicitudes de reapertura: casos cerrados (simulamos que hay solicitudes)
     // Por ahora no hay un mecanismo de solicitud de reapertura desde reportante, así que mostramos los cerrados recientemente
@@ -56,7 +56,7 @@ export function DecisionCenter() {
         if (daysSinceActivity > 5) return true;
       }
       // Críticos sin responsable
-      if (c.priority === "critica" && !c.assignee && c.stage !== "recepcion" && c.stage !== "evaluacion") return true;
+      if (riskCategory(c.riskLevel) === "inaceptable" && !c.assignee && c.stage !== "recepcion" && c.stage !== "evaluacion") return true;
       return false;
     });
 
@@ -241,7 +241,7 @@ function DecisionCard({
 
   const days = daysUntil(c.slaDueDate);
   const sla = slaState(c.slaDueDate, c.stage);
-  const isCritical = c.priority === "critica";
+  const isCritical = riskCategory(c.riskLevel) === "inaceptable";
 
   const cardBorder = isCritical ? "border-critical/30" : tone === "warning" ? "border-warning/25" : tone === "info" ? "border-info/20" : "border-line";
   const cardBg = isCritical ? "bg-critical-soft/30" : "bg-white";
@@ -287,7 +287,7 @@ function DecisionCard({
           </div>
           <p className="text-[13px] font-semibold text-ink leading-snug line-clamp-2">{c.title}</p>
         </div>
-        <PriorityPill priority={c.priority} />
+        <RiskPill risk={c.riskLevel} />
       </div>
 
       {/* Info específica por tipo */}
@@ -346,7 +346,7 @@ function DecisionCard({
                 <AlertTriangle className="h-3 w-3" /> SLA vencido {Math.abs(days)} días
               </div>
             )}
-            {!c.assignee && c.priority !== "critica" && (
+            {!c.assignee && riskCategory(c.riskLevel) !== "inaceptable" && (
               <div className="rounded-md bg-warning-soft border border-warning/20 px-2 py-1 text-[11px] text-warning-ink flex items-center gap-1.5">
                 <AlertCircle className="h-3 w-3" /> Sin responsable asignado
               </div>

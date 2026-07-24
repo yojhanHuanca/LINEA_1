@@ -46,7 +46,7 @@ import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
 import { Field, Input, Select, Textarea } from "@/design-system/primitives/Input";
 import { Modal } from "@/design-system/primitives/Modal";
-import { Pill, PriorityPill, StagePill } from "@/design-system/primitives/Pill";
+import { Pill, PriorityPill, StagePill, RiskPill } from "@/design-system/primitives/Pill";
 import { Progress } from "@/design-system/primitives/Progress";
 import {
   AREA_HEADS,
@@ -55,6 +55,7 @@ import {
   IMPLICATION_LABELS,
   LABOR_STATE_LABELS,
   PRIORITY_LABELS,
+  RISK_LABELS,
   STAGE_LABELS,
   STAGE_STATUS,
   type Area,
@@ -63,6 +64,7 @@ import {
   type InvolvedWorker,
   type Investigation,
   type Priority,
+  type RiskLevel,
   type Stage,
   type User,
 } from "@/lib/types";
@@ -124,7 +126,7 @@ export function CaseFile() {
             <span className="font-mono text-[14px] font-bold text-brand-700">{c.id}</span>
             <span className="text-ink-faint">·</span>
             <Pill tone="neutral">{EVENT_LABELS[c.type]}</Pill>
-            <PriorityPill priority={c.priority} />
+            <RiskPill risk={c.riskLevel} showCategory />
             <StagePill stage={c.stage} />
           </div>
           <h1 className="mt-2 text-[22px] font-bold text-ink tracking-tight leading-tight max-w-3xl">{c.title}</h1>
@@ -1650,7 +1652,7 @@ function downloadPlan(c: Store["cases"][number]) {
       <div><b>Tipo de incidencia</b><br/>${EVENT_LABELS[c.type]}</div>
       <div><b>Estación</b><br/>${escapeHtml(c.station)}</div>
       <div><b>Área responsable</b><br/>${AREA_LABELS[c.assigneeArea ?? c.area]}</div>
-      <div><b>Prioridad</b><br/>${PRIORITY_LABELS[c.priority]}</div>
+      <div><b>Análisis de riesgo</b><br/>${RISK_LABELS[c.riskLevel]}</div>
       <div><b>Fecha límite</b><br/>${formatDate(c.slaDueDate)}</div>
     </div>
     <h2>Objetivo del Plan de Acción</h2>

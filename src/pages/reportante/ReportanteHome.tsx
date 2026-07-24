@@ -5,7 +5,7 @@ import { ReportanteShell } from "@/design-system/layout/ReportanteShell";
 import { WelcomeBanner } from "@/design-system/layout/WelcomeBanner";
 import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
-import { StagePill, PriorityPill, Pill } from "@/design-system/primitives/Pill";
+import { StagePill, PriorityPill, Pill, RiskPill } from "@/design-system/primitives/Pill";
 import { EmptyState } from "@/design-system/primitives/Progress";
 import { EVENT_LABELS, STAGE_STATUS } from "@/lib/types";
 import { cn, formatDate, relativeTime, slaState } from "@/lib/utils";
@@ -162,7 +162,7 @@ export function ReportanteHome() {
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-1.5 shrink-0">
                   <StagePill stage={c.stage} />
-                  <PriorityPill priority={c.priority} />
+                  <RiskPill risk={c.riskLevel} />
                 </div>
                 <Link to="/reportante/mis-reportes" className="shrink-0">
                   <Button variant="ghost" size="sm">Detalle <ArrowRight className="h-3.5 w-3.5" /></Button>

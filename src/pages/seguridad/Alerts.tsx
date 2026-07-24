@@ -5,8 +5,8 @@ import { useStore } from "@/lib/store";
 import { SegShell } from "@/design-system/layout/SegShell";
 import { Card, CardHeader } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
-import { Pill, PriorityPill } from "@/design-system/primitives/Pill";
-import { EVENT_LABELS, STAGE_LABELS, STAGE_STATUS, type CaseFile, type Priority } from "@/lib/types";
+import { Pill, PriorityPill, RiskPill } from "@/design-system/primitives/Pill";
+import { EVENT_LABELS, STAGE_LABELS, STAGE_STATUS, type CaseFile, type Priority, riskCategory } from "@/lib/types";
 import { cn, daysUntil, formatDate, relativeTime, slaState } from "@/lib/utils";
 
 type AlertKind = "critical" | "warning" | "info";
@@ -31,14 +31,15 @@ interface AlertItem {
   at: string;
   kind: AlertKind;
   priority: Priority;
+  c: CaseFile;
 }
 
-type AlertRule = (c: CaseFile) => Omit<AlertItem, "caseId" | "priority"> | null;
+type AlertRule = (c: CaseFile) => Omit<AlertItem, "caseId" | "priority" | "c"> | null;
 
 const ALERT_RULES: AlertRule[] = [
   (c) =>
-    c.priority === "critica"
-      ? { id: `crit-${c.id}`, title: `Caso crítico sin cerrar · ${c.id}`, detail: `${EVENT_LABELS[c.type]} en ${c.station}. Prioridad crítica requiere atención inmediata.`, at: c.createdAt, kind: "critical" }
+    riskCategory(c.riskLevel) === "inaceptable"
+      ? { id: `crit-${c.id}`, title: `Caso crítico sin cerrar · ${c.id}`, detail: `${EVENT_LABELS[c.type]} en ${c.station}. Riesgo inaceptable requiere atención inmediata.`, at: c.createdAt, kind: "critical" }
       : null,
   (c) => {
     const sla = slaState(c.slaDueDate, c.stage);
@@ -66,7 +67,7 @@ export function Alerts() {
       .flatMap((c) =>
         ALERT_RULES.map((rule) => rule(c))
           .filter(Boolean)
-          .map((a) => ({ ...a!, caseId: c.id, priority: c.priority }))
+          .map((a) => ({ ...a!, caseId: c.id, priority: c.priority, c }))
       )
       .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || +new Date(b.at) - +new Date(a.at));
   }, [cases]);
@@ -120,7 +121,7 @@ export function Alerts() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-[13.5px] font-semibold text-ink">{a.title}</p>
                       <Pill tone={a.kind} dot>{meta.label}</Pill>
-                      <PriorityPill priority={a.priority} />
+                      <RiskPill risk={a.c.riskLevel} />
                     </div>
                     <p className="text-[12.5px] text-ink-soft mt-1 leading-relaxed">{a.detail}</p>
                     <p className="text-[11px] text-ink-faint mt-1.5 flex items-center gap-1.5">

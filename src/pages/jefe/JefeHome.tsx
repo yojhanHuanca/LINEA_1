@@ -33,13 +33,14 @@ import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
 import { Field, Input, Textarea } from "@/design-system/primitives/Input";
 import { Modal } from "@/design-system/primitives/Modal";
-import { Pill, PriorityPill } from "@/design-system/primitives/Pill";
+import { Pill, PriorityPill, RiskPill } from "@/design-system/primitives/Pill";
 import { Progress, EmptyState } from "@/design-system/primitives/Progress";
 import {
   AREA_HEADS,
   AREA_LABELS,
   EVENT_LABELS,
   PRIORITY_LABELS,
+  RISK_LABELS,
   type ActionItem,
   type CaseFile,
   type Evidence,
@@ -174,8 +175,8 @@ function PlanExecutionView({ c, s }: { c: CaseFile; s: ReturnType<typeof useStor
             <div className="flex items-center gap-2.5">
               <span className="text-ink-faint"><Flag className="h-3.5 w-3.5" /></span>
               <div>
-                <p className="text-[10.5px] text-ink-faint">Prioridad</p>
-                <div className="mt-0.5"><PriorityPill priority={c.priority} /></div>
+                <p className="text-[10.5px] text-ink-faint">Riesgo</p>
+                <div className="mt-0.5"><RiskPill risk={c.riskLevel} /></div>
               </div>
             </div>
             <InfoCell icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha de asignación" value={formatDate(plan.submittedAt ?? c.createdAt)} />
@@ -790,7 +791,7 @@ function downloadPlan(c: CaseFile) {
       <div><b>Tipo de incidencia</b><br/>${EVENT_LABELS[c.type]}</div>
       <div><b>Estación</b><br/>${escapeHtml(c.station)}</div>
       <div><b>Área responsable</b><br/>${AREA_LABELS[c.assigneeArea ?? c.area]}</div>
-      <div><b>Prioridad</b><br/>${PRIORITY_LABELS[c.priority]}</div>
+      <div><b>Análisis de riesgo</b><br/>${RISK_LABELS[c.riskLevel]}</div>
       <div><b>Fecha límite</b><br/>${formatDate(c.slaDueDate)}</div>
     </div>
     <h2>Objetivo del Plan de Acción</h2>

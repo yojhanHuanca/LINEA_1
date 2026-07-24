@@ -24,7 +24,7 @@ import { SegShell } from "@/design-system/layout/SegShell";
 import { WelcomeBanner } from "@/design-system/layout/WelcomeBanner";
 import { Card, CardHeader } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
-import { Pill, PriorityPill, StagePill } from "@/design-system/primitives/Pill";
+import { Pill, PriorityPill, StagePill, RiskPill } from "@/design-system/primitives/Pill";
 import { Progress } from "@/design-system/primitives/Progress";
 import { IncidentMap } from "@/pages/seguridad/IncidentMap";
 import {
@@ -131,7 +131,7 @@ export function Dashboard() {
 
   const recent = useMemo(() => {
     return cases
-      .flatMap((c) => c.timeline.map((t) => ({ ...t, caseId: c.id, caseTitle: c.title, priority: c.priority })))
+      .flatMap((c) => c.timeline.map((t) => ({ ...t, caseId: c.id, caseTitle: c.title, priority: c.priority, riskLevel: c.riskLevel })))
       .sort((a, b) => +new Date(b.at) - +new Date(a.at))
       .slice(0, 7);
   }, [cases]);
@@ -286,7 +286,7 @@ export function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-[12px] font-semibold text-ink">{c.id}</span>
-                      <PriorityPill priority={c.priority} />
+                      <RiskPill risk={c.riskLevel} />
                     </div>
                     <p className="text-[13.5px] font-semibold text-ink truncate mt-0.5">{c.title}</p>
                     <p className="text-[11.5px] text-ink-quiet mt-0.5">
@@ -343,7 +343,7 @@ export function Dashboard() {
                   {relativeTime(t.at)}
                 </p>
               </div>
-              <PriorityPill priority={t.priority} />
+              <RiskPill risk={t.riskLevel} />
             </div>
           ))}
         </div>

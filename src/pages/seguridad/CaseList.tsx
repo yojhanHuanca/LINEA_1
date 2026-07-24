@@ -18,7 +18,7 @@ import { useStore } from "@/lib/store";
 import { SegShell } from "@/design-system/layout/SegShell";
 import { Card } from "@/design-system/primitives/Card";
 import { Button } from "@/design-system/primitives/Button";
-import { PriorityPill, StagePill, Pill } from "@/design-system/primitives/Pill";
+import { PriorityPill, StagePill, Pill, RiskPill } from "@/design-system/primitives/Pill";
 import { EmptyState } from "@/design-system/primitives/Progress";
 import {
   AREA_LABELS,
@@ -218,7 +218,7 @@ export function CaseList() {
                       <span className="text-[12px] text-ink-soft">{AREA_LABELS[c.area]}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <PriorityPill priority={c.priority} />
+                      <RiskPill risk={c.riskLevel} />
                     </td>
                     <td className="px-4 py-3.5">
                       <StagePill stage={c.stage} />

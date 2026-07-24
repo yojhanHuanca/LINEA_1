@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -212,7 +213,7 @@ export function IncidentMap() {
         />
       </div>
 
-      <Card padded={false} className="overflow-hidden border-line-strong">
+      <Card padded={false} className="border-line-strong">
         <div className="relative">
           <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-brand-100 bg-gradient-to-r from-brand-50 to-white">
             <div className="flex items-start gap-3">
@@ -349,18 +350,17 @@ export function IncidentMap() {
               })}
             </svg>
 
-            {/* Popup flotante al lado del marcador clickeado */}
+            {/* Popup flotante con posicionamiento inteligente tipo Google Maps */}
             {selected && (
-              <div
-                className="absolute z-30 w-[320px] animate-[fadeIn_0.18s_var(--ease-out)]"
-                style={{
-                  left: `calc(${(selected.x / MAP_W) * 100}% + 18px)`,
-                  top: `calc(${(selected.y / MAP_H) * 100}% - 20px)`,
-                  transform: selected.x > MAP_W * 0.65 ? "translateX(calc(-100% - 36px))" : undefined,
-                }}
+              <MapPopup
+                x={selected.x}
+                y={selected.y}
+                mapW={MAP_W}
+                mapH={MAP_H}
+                onClose={() => setSelected(null)}
               >
                 <StationPanel station={selected} onClose={() => setSelected(null)} />
-              </div>
+              </MapPopup>
             )}
 
             <div className="flex items-center gap-4 px-4 py-3 bg-white border-t border-line">
@@ -381,6 +381,74 @@ export function IncidentMap() {
 
         </Card>
 
+    </div>
+  );
+}
+
+/* ─── Popup con posicionamiento inteligente tipo Google Maps ─── */
+function MapPopup({
+  x, y, mapW, mapH, onClose, children,
+}: {
+  x: number; y: number; mapW: number; mapH: number; onClose: () => void; children: ReactNode;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current || !popupRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const popupRect = popupRef.current.getBoundingClientRect();
+
+    const POPUP_W = popupRect.width;
+    const POPUP_H = popupRect.height;
+    const MARGIN = 12;
+
+    // Posición base: a la derecha del marcador, centrado verticalmente
+    let left = (x / mapW) * containerRect.width + MARGIN;
+    let top = (y / mapH) * containerRect.height - POPUP_H / 2;
+
+    // Si no cabe a la derecha, mostrar a la izquierda
+    if (left + POPUP_W > containerRect.width - MARGIN) {
+      left = (x / mapW) * containerRect.width - POPUP_W - MARGIN;
+    }
+    // Si no cabe a la izquierda tampoco, centrar horizontalmente
+    if (left < MARGIN) {
+      left = Math.max(MARGIN, (containerRect.width - POPUP_W) / 2);
+    }
+
+    // Vertical: si no cabe abajo, mostrar arriba del marcador
+    if (top + POPUP_H > containerRect.height - MARGIN) {
+      top = (y / mapH) * containerRect.height - POPUP_H - MARGIN;
+    }
+    // Si no cabe arriba, anclar arriba del contenedor
+    if (top < MARGIN) {
+      top = MARGIN;
+    }
+    // Si aún así se sale abajo, limitar
+    if (top + POPUP_H > containerRect.height - MARGIN) {
+      top = containerRect.height - POPUP_H - MARGIN;
+    }
+
+    setPos({ left, top });
+    setReady(true);
+  }, [x, y, mapW, mapH]);
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 z-30 pointer-events-none">
+      <div
+        ref={popupRef}
+        className="absolute w-[320px] pointer-events-auto animate-[fadeIn_0.18s_var(--ease-out)]"
+        style={{
+          left: pos.left,
+          top: pos.top,
+          opacity: ready ? 1 : 0,
+          transition: "opacity 0.15s ease-out",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

@@ -509,6 +509,11 @@ export interface CaseFile {
     reviewedAt?: string;
     reviewDecision?: "aprobado" | "rechazado";
     reviewNote?: string;
+    planCode?: string;
+    planStatus?: "pendiente" | "cerrado";
+    planDate?: string;
+    scheduledDate?: string;
+    annexes?: string;
   };
   extensionRequest?: {
     motivo: string;

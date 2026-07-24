@@ -192,6 +192,11 @@ interface ActionPlanInput {
   observations: string;
   items: { name: string; description: string; owner: string; priority: Priority; startDate: string; dueDate: string }[];
   sentToArea: Area;
+  planCode?: string;
+  planStatus?: "pendiente" | "cerrado";
+  planDate?: string;
+  scheduledDate?: string;
+  annexes?: string;
 }
 
 interface ExtensionInput {
@@ -534,6 +539,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               })),
               submittedAt: nowISO(),
               sentToArea: plan.sentToArea,
+              planCode: plan.planCode,
+              planStatus: plan.planStatus,
+              planDate: plan.planDate,
+              scheduledDate: plan.scheduledDate,
+              annexes: plan.annexes,
             },
           },
           {

@@ -1093,10 +1093,14 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
-  const [estimatedTime, setEstimatedTime] = useState("7 días");
   const [priority, setPriority] = useState<Priority>(c.priority);
   const [observations, setObservations] = useState("");
   const [sentToArea, setSentToArea] = useState<Area | "">(c.area ?? "");
+  const [planCode, setPlanCode] = useState(`SOP-01-${new Date().getFullYear()}-PLA-${String(c.id.slice(-4)).padStart(2, '0')}`);
+  const [planStatus, setPlanStatus] = useState<"pendiente" | "cerrado">("pendiente");
+  const [planDate, setPlanDate] = useState(new Date().toISOString().slice(0, 10));
+  const [scheduledDate, setScheduledDate] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  const [annexes, setAnnexes] = useState("");
   const [items, setItems] = useState<PlanFormItem[]>([{ name: "", description: "", owner: "", priority: "media", startDate: new Date().toISOString().slice(0, 10), dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) }]);
 
   const update = (i: number, key: keyof PlanFormItem, v: string) => setItems((p) => p.map((it, idx) => (idx === i ? { ...it, [key]: v } : it)));
@@ -1108,8 +1112,9 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
   const send = () => {
     if (!canSend) return;
     store.submitActionPlan(c.id, {
-      elaboratedBy, actionType, description: description.trim(), startDate, dueDate, estimatedTime, priority,
+      elaboratedBy, actionType, description: description.trim(), startDate, dueDate, estimatedTime: "", priority,
       observations: observations.trim(), sentToArea: sentToArea as Area,
+      planCode, planStatus, planDate, scheduledDate, annexes: annexes.trim(),
       items: items.map((it) => ({ name: it.name.trim(), description: it.description.trim(), owner: it.owner.trim(), priority: it.priority, startDate: it.startDate, dueDate: it.dueDate })),
     });
     onSubmitted();
@@ -1140,11 +1145,29 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
             <option>Correctiva</option><option>Preventiva</option><option>Mitigación</option><option>Compensatoria</option>
           </Select>
         </Field>
+        <Field label="Código del Plan de Acción">
+          <Input value={planCode} onChange={(e) => setPlanCode(e.target.value)} placeholder="SOP-01-2026-PLA-01" />
+        </Field>
         <Field label="Área responsable (envío)" required>
           <Select value={sentToArea} onChange={(e) => setSentToArea(e.target.value as Area)}>
             <option value="">Seleccione un área…</option>
             {(Object.keys(AREA_LABELS) as Area[]).map((a) => <option key={a} value={a}>{AREA_LABELS[a]} · Jefe: {AREA_HEADS[a]}</option>)}
           </Select>
+        </Field>
+        <Field label="Estado del Plan de Acción">
+          <Select value={planStatus} onChange={(e) => setPlanStatus(e.target.value as "pendiente" | "cerrado")}>
+            <option value="pendiente">Pendiente</option>
+            <option value="cerrado">Cerrado</option>
+          </Select>
+        </Field>
+        <Field label="Fecha del Plan">
+          <Input type="date" value={planDate} onChange={(e) => setPlanDate(e.target.value)} />
+        </Field>
+        <Field label="Fecha Programada">
+          <Input type="date" min={startDate} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+        </Field>
+        <Field label="Anexos">
+          <Textarea value={annexes} onChange={(e) => setAnnexes(e.target.value)} rows={2} placeholder="Documentos adjuntos o referencias…" />
         </Field>
         <Field label="Descripción detallada" required className="sm:col-span-2">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Resumen del plan de acción…" />
@@ -1153,10 +1176,7 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
         <Field label="Fecha límite" required>
-          <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </Field>
-        <Field label="Tiempo estimado">
-          <Input value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} placeholder="Ej. 7 días" />
+          <Input type="date" min={startDate} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </Field>
         <Field label="Observaciones">
           <Input value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Indicaciones para el área…" />
@@ -1173,7 +1193,7 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
                 {items.length > 1 && <button onClick={() => remove(i)} className="text-[11px] text-critical hover:underline">Eliminar</button>}
               </div>
               <Field label="Nombre" required>
-                <Input value={it.name} onChange={(e) => update(i, "name", e.target.value)} placeholder="Ej. Reemplazo de actuador" />
+                <Input value={it.name} onChange={(e) => update(i, "name", e.target.value)} placeholder="" />
               </Field>
               <Field label="Descripción">
                 <Textarea value={it.description} onChange={(e) => update(i, "description", e.target.value)} rows={2} placeholder="Detalle de la actividad…" />
@@ -1188,10 +1208,10 @@ function PlanForm({ c, store, onSubmitted }: { c: Store["cases"][number]; store:
                   </Select>
                 </Field>
                 <Field label="Fecha inicio" required>
-                  <Input type="date" value={it.startDate} onChange={(e) => update(i, "startDate", e.target.value)} />
+                  <Input type="date" min={startDate} value={it.startDate} onChange={(e) => update(i, "startDate", e.target.value)} />
                 </Field>
                 <Field label="Fecha fin" required>
-                  <Input type="date" value={it.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} />
+                  <Input type="date" min={it.startDate || startDate} value={it.dueDate} onChange={(e) => update(i, "dueDate", e.target.value)} />
                 </Field>
               </div>
             </div>
@@ -1228,7 +1248,6 @@ function PlanDisplay({ c }: { c: Store["cases"][number] }) {
         <PlanMeta label="Prioridad" value={PRIORITY_LABELS[plan.priority]} />
         <PlanMeta label="Fecha inicio" value={formatDate(plan.startDate)} />
         <PlanMeta label="Fecha límite" value={formatDate(plan.dueDate)} />
-        <PlanMeta label="Tiempo estimado" value={plan.estimatedTime} />
         <PlanMeta label="Enviado" value={plan.submittedAt ? relativeTime(plan.submittedAt) : "—"} />
       </div>
       {plan.description && (
@@ -1774,7 +1793,6 @@ function downloadPlan(c: Store["cases"][number]) {
     <div class="meta">
       <div><b>Elaborado por</b><br/>${escapeHtml(plan.elaboratedBy)}</div>
       <div><b>Fecha de creación</b><br/>${formatDate(plan.submittedAt ?? c.createdAt)}</div>
-      <div><b>Tiempo estimado</b><br/>${escapeHtml(plan.estimatedTime)}</div>
     </div>
     ${plan.observations ? `<h2>Observaciones generales</h2><p style="font-size:12.5px">${escapeHtml(plan.observations)}</p>` : ""}
     <h2>Actividades</h2>

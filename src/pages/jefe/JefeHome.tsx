@@ -228,7 +228,6 @@ function PlanExecutionView({ c, s }: { c: CaseFile; s: ReturnType<typeof useStor
                 <PlanMeta label="Responsable que elaboró" value={plan.elaboratedBy} />
                 <PlanMeta label="Fecha de creación" value={formatDate(plan.submittedAt ?? c.createdAt)} />
                 <PlanMeta label="Nivel de prioridad" value={PRIORITY_LABELS[plan.priority]} />
-                <PlanMeta label="Tiempo estimado" value={plan.estimatedTime} />
                 <PlanMeta label="Fecha límite" value={formatDate(plan.dueDate)} />
               </div>
               <div className="space-y-3 pt-3 border-t border-line-soft">
@@ -799,7 +798,6 @@ function downloadPlan(c: CaseFile) {
     <div class="meta">
       <div><b>Elaborado por</b><br/>${escapeHtml(plan.elaboratedBy)}</div>
       <div><b>Fecha de creación</b><br/>${formatDate(plan.submittedAt ?? c.createdAt)}</div>
-      <div><b>Tiempo estimado</b><br/>${escapeHtml(plan.estimatedTime)}</div>
       <div><b>Prioridad del plan</b><br/>${PRIORITY_LABELS[plan.priority]}</div>
     </div>
     ${plan.observations ? `<h2>Observaciones generales</h2><p style="font-size:12.5px">${escapeHtml(plan.observations)}</p>` : ""}

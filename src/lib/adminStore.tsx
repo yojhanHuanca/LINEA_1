@@ -64,9 +64,11 @@ const SEED_AREAS: AdminArea[] = [
 ];
 
 const SEED_STATIONS: AdminStation[] = [
-  "San Juan", "Atocongo", "Pamplona", "Matellini", "Puno", "Parque Industrial",
-  "Pueblo Libre", "Oscar R. Benavides", "Cabitos", "Ayacucho", "Javier Prado",
-  "El Ángel", "Gamarra", "Caja de Agua", "Pirámide del Sol", "Estación Central",
+  "Villa El Salvador", "Parque Industrial", "Pumacahua", "Villa Maria", "Maria Auxiliadora",
+  "San Juan", "Atocongo", "Jorge Chavez", "Ayacucho", "Cabitos", "Angamos",
+  "San Borja Sur", "La Cultura", "Arriola", "Gamarra", "Miguel Grau", "El Angel",
+  "Presbitero Maestro", "Caja de Agua", "Piramide del Sol", "Los Jardines",
+  "Los Postes", "San Carlos", "San Martin", "Santa Rosa", "Bayovar",
 ].map((name, i) => ({
   id: `st_${String(i + 1).padStart(2, "0")}`,
   name,

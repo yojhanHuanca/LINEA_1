@@ -48,17 +48,22 @@ import {
   AREA_LABELS,
   EVENT_LABELS,
   STATIONS,
+  TIPO_SOP_LABELS,
+  SUBTIPO_SOP_LABELS,
   type Area,
   type Evidence,
   type EventType,
+  type TipoSOP,
+  type SubtipoSOP,
 } from "@/lib/types";
 
 const STEPS = [
   { id: 0, label: "Tipo", icon: Tag },
   { id: 1, label: "Ubicación", icon: MapPin },
   { id: 2, label: "Descripción", icon: Type },
-  { id: 3, label: "Evidencias", icon: Upload },
-  { id: 4, label: "Envío", icon: ShieldCheck },
+  { id: 3, label: "Clasificación", icon: ShieldCheck },
+  { id: 4, label: "Evidencias", icon: Upload },
+  { id: 5, label: "Envío", icon: ShieldCheck },
 ] as const;
 
 const REPORT_TYPES: { value: EventType; label: string; icon: typeof Tag; hint: string }[] = [
@@ -101,6 +106,10 @@ export function NewReportWizard() {
     contactName: "",
     contactEmail: "",
     contactPhone: "",
+    tipoSOP: "" as TipoSOP | "",
+    subtipoSOP: "" as SubtipoSOP | "",
+    peligro: "",
+    consecuencia: "",
   });
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -114,6 +123,8 @@ export function NewReportWizard() {
         return !!form.station;
       case 2:
         return form.description.trim().length >= 10;
+      case 3:
+        return !!form.tipoSOP && !!form.subtipoSOP;
       default:
         return true;
     }
@@ -321,8 +332,44 @@ export function NewReportWizard() {
             </StepBox>
           )}
 
-          {/* Paso 4 — Evidencias */}
+          {/* Paso 3 — Clasificación SOP */}
           {step === 3 && (
+            <StepBox title="Clasificación SOP" subtitle="Selecciona el tipo y subtipo para ayudar al análisis.">
+              <Field label="Tipo de SOP" required>
+                <Select value={form.tipoSOP} onChange={(e) => set("tipoSOP", e.target.value as TipoSOP)}>
+                  <option value="">Seleccionar…</option>
+                  {(Object.keys(TIPO_SOP_LABELS) as TipoSOP[]).map((t) => (
+                    <option key={t} value={t}>{TIPO_SOP_LABELS[t]}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Subtipo SOP" required className="mt-4">
+                <Select value={form.subtipoSOP} onChange={(e) => set("subtipoSOP", e.target.value as SubtipoSOP)}>
+                  <option value="">Seleccionar…</option>
+                  {(Object.keys(SUBTIPO_SOP_LABELS) as SubtipoSOP[]).map((s) => (
+                    <option key={s} value={s}>{SUBTIPO_SOP_LABELS[s]}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Peligro (opcional)" className="mt-4">
+                <Input
+                  value={form.peligro}
+                  onChange={(e) => set("peligro", e.target.value)}
+                  placeholder="Ej: Superficie mojada sin señalización"
+                />
+              </Field>
+              <Field label="Consecuencia (opcional)" className="mt-4">
+                <Input
+                  value={form.consecuencia}
+                  onChange={(e) => set("consecuencia", e.target.value)}
+                  placeholder="Ej: Lesión leve en muñeca"
+                />
+              </Field>
+            </StepBox>
+          )}
+
+          {/* Paso 4 — Evidencias */}
+          {step === 4 && (
             <StepBox title="¿Deseas adjuntar evidencias?" subtitle="Fotografías o video. Es opcional.">
               <div className="rounded-xl border-2 border-dashed border-line-strong bg-surface/40 p-8 text-center">
                 <div className="h-12 w-12 rounded-xl bg-white border border-line grid place-items-center text-brand-700 mx-auto">
@@ -362,7 +409,7 @@ export function NewReportWizard() {
           )}
 
           {/* Paso 5 — Confirmación y Privacidad */}
-          {step === 4 && (
+          {step === 5 && (
             <StepBox title="¿Cómo deseas enviar tu reporte?" subtitle="Elige la modalidad de envío.">
               {/* Opciones de privacidad */}
               <div className="grid sm:grid-cols-2 gap-3 mb-4">

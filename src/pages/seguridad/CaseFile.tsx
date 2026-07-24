@@ -14,6 +14,7 @@ import {
   X,
   AlertCircle,
   ShieldCheck,
+  Shield,
   Mail,
   Microscope,
   ClipboardList,
@@ -28,6 +29,7 @@ import {
   Building2,
   ChevronRight,
   AlertTriangle,
+  AlertOctagon,
   Timer,
   FileSearch,
   Gavel,
@@ -39,6 +41,7 @@ import {
   UserCheck,
   Briefcase,
   Info,
+  Train,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { SegShell } from "@/design-system/layout/SegShell";
@@ -56,6 +59,20 @@ import {
   LABOR_STATE_LABELS,
   PRIORITY_LABELS,
   RISK_LABELS,
+  TIPO_SOP_LABELS,
+  SUBTIPO_SOP_LABELS,
+  PROCEDENCIA_LABELS,
+  ESTADO_HALLAZGO_LABELS,
+  TIPO_HALLAZGO_LABELS,
+  AREA_SOP_LABELS,
+  TIPO_INCIDENTE_LABELS,
+  UBICACION_LABELS,
+  LUGAR_INCIDENTE_LABELS,
+  MODELO_MR_LABELS,
+  PERSONAL_FALLA_LABELS,
+  TIPO_CAUSA_LABELS,
+  RESPONSABLES_INVESTIGACION,
+  RESPONSABLES_PLAN,
   STAGE_LABELS,
   STAGE_STATUS,
   type Area,
@@ -225,6 +242,62 @@ function LeftPanel({ c }: { c: ReturnType<typeof useStore>["cases"][number] }) {
           {c.closedAt && <InfoRow icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Cerrado" value={formatDateTime(c.closedAt)} />}
         </div>
       </Card>
+
+      {/* Datos SOP */}
+      {c.sop && (
+        <Card padded={false}>
+          <div className="p-4 border-b border-line-soft flex items-center justify-between">
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Registro SOP</p>
+            <Pill tone={c.sop.estadoHallazgo === "cerrado" ? "brand" : "warning"} dot>{ESTADO_HALLAZGO_LABELS[c.sop.estadoHallazgo]}</Pill>
+          </div>
+          <div className="p-4 space-y-3.5">
+            <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="Tipo de SOP" value={TIPO_SOP_LABELS[c.sop.tipoSOP]} />
+            <InfoRow icon={<Flag className="h-3.5 w-3.5" />} label="Subtipo" value={SUBTIPO_SOP_LABELS[c.sop.subtipoSOP]} />
+            <InfoRow icon={<Building2 className="h-3.5 w-3.5" />} label="Procedencia" value={PROCEDENCIA_LABELS[c.sop.procedencia]} />
+            <InfoRow icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Tipo hallazgo" value={TIPO_HALLAZGO_LABELS[c.sop.tipoHallazgo]} />
+            <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha hallazgo" value={formatDate(c.sop.fechaHallazgo)} />
+            <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Fecha evento" value={formatDate(c.sop.fechaEvento)} />
+            <InfoRow icon={<UserIcon className="h-3.5 w-3.5" />} label="Responsable investigación" value={c.sop.responsableInvestigacion} />
+            {c.sop.peligro && <InfoRow icon={<AlertOctagon className="h-3.5 w-3.5" />} label="Peligro" value={c.sop.peligro} />}
+            {c.sop.consecuencia && <InfoRow icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Consecuencia" value={c.sop.consecuencia} />}
+            <InfoRow icon={<Shield className="h-3.5 w-3.5" />} label="Análisis de riesgo" value={RISK_LABELS[c.sop.analisisRiesgo]} />
+            {c.sop.acr && <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="ACR" value={c.sop.acr} />}
+            {c.sop.planCodigo && (
+              <>
+                <div className="h-px bg-line-soft my-1" />
+                <InfoRow icon={<ClipboardList className="h-3.5 w-3.5" />} label="Plan de acción" value={c.sop.planCodigo} />
+                {c.sop.planResponsable && <InfoRow icon={<UserIcon className="h-3.5 w-3.5" />} label="Responsable plan" value={c.sop.planResponsable} />}
+                {c.sop.planArea && <InfoRow icon={<Building2 className="h-3.5 w-3.5" />} label="Área plan" value={AREA_SOP_LABELS[c.sop.planArea]} />}
+                {c.sop.planEstado && <InfoRow icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Estado plan" value={c.sop.planEstado === "cerrado" ? "Cerrado" : "Pendiente"} />}
+              </>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Evento operativo */}
+      {c.evento?.tipoIncidenteOperativo && (
+        <Card padded={false}>
+          <div className="p-4 border-b border-line-soft">
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Evento operativo</p>
+          </div>
+          <div className="p-4 space-y-3.5">
+            <InfoRow icon={<AlertOctagon className="h-3.5 w-3.5" />} label="Tipo incidente" value={TIPO_INCIDENTE_LABELS[c.evento.tipoIncidenteOperativo]} />
+            {c.evento.ubicacion && <InfoRow icon={<MapPin className="h-3.5 w-3.5" />} label="Ubicación" value={UBICACION_LABELS[c.evento.ubicacion]} />}
+            {c.evento.lugarIncidente && <InfoRow icon={<MapPin className="h-3.5 w-3.5" />} label="Lugar" value={LUGAR_INCIDENTE_LABELS[c.evento.lugarIncidente]} />}
+            {c.evento.rangoHorario && <InfoRow icon={<Clock className="h-3.5 w-3.5" />} label="Rango horario" value={c.evento.rangoHorario} />}
+            {c.evento.tipoVia && <InfoRow icon={<Flag className="h-3.5 w-3.5" />} label="Tipo vía" value={c.evento.tipoVia} />}
+            {c.evento.modeloMR && <InfoRow icon={<Train className="h-3.5 w-3.5" />} label="Modelo MR" value={MODELO_MR_LABELS[c.evento.modeloMR]} />}
+            {c.evento.nroMR && <InfoRow icon={<Train className="h-3.5 w-3.5" />} label="Nro. MR" value={c.evento.nroMR} />}
+            {c.evento.nroCarrera && <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="Nro. carrera" value={c.evento.nroCarrera} />}
+            {c.evento.personalFalla && <InfoRow icon={<UserIcon className="h-3.5 w-3.5" />} label="Personal/Falla" value={PERSONAL_FALLA_LABELS[c.evento.personalFalla]} />}
+            {c.evento.tipoCausa && <InfoRow icon={<Search className="h-3.5 w-3.5" />} label="Tipo causa" value={TIPO_CAUSA_LABELS[c.evento.tipoCausa]} />}
+            {c.evento.posibleCausa && <InfoRow icon={<Search className="h-3.5 w-3.5" />} label="Posible causa" value={c.evento.posibleCausa} />}
+            {c.evento.descripcionEvento && <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="Descripción" value={c.evento.descripcionEvento} />}
+            {c.evento.informacionAdicional && <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="Info adicional" value={c.evento.informacionAdicional} />}
+          </div>
+        </Card>
+      )}
 
       <Card padded={false}>
         <div className="p-4 border-b border-line-soft flex items-center justify-between">

@@ -324,60 +324,6 @@ export function IncidentMap() {
         {selected && <StationPanel station={selected} />}
       </div>
 
-      <Card>
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
-          <div>
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase text-ink-faint">Resumen institucional</p>
-            <h3 className="text-[18px] font-bold text-ink tracking-tight mt-1">Estado de las estaciones de Línea 1</h3>
-          </div>
-          <Pill tone="neutral">{stations.filter((station) => station.total > 0).length} estaciones con histórico</Pill>
-        </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          {stations.map((station) => (
-            <button
-              key={station.name}
-              onClick={() => setSelected(station)}
-              className={cn(
-                "rounded-2xl border p-4 text-left transition-all bg-white hover:shadow-[var(--shadow-card-hover)]",
-                selected?.name === station.name ? "border-brand-300 ring-1 ring-brand-200" : "border-line"
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-ink truncate">{station.name}</p>
-                  <p className="text-[11.5px] text-ink-quiet mt-0.5">
-                    {station.area ? AREA_LABELS[station.area] : "Sin casos registrados"}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "h-9 w-9 rounded-xl grid place-items-center shrink-0",
-                    RISK_CONFIG[station.riesgo].bg,
-                    RISK_CONFIG[station.riesgo].text
-                  )}
-                >
-                  <Train className="h-4.5 w-4.5" />
-                </span>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <MiniStat label="Abiertos" value={station.abiertos} tone={station.abiertos > 0 ? "critical" : "neutral"} />
-                <MiniStat label="Cerrados" value={station.cerrados} tone="brand" />
-                <MiniStat label="Total" value={station.total} tone="neutral" />
-              </div>
-
-              <div className="mt-3 flex items-center justify-between text-[11.5px]">
-                <span className={cn("font-semibold", RISK_CONFIG[station.riesgo].text)}>
-                  Riesgo {RISK_CONFIG[station.riesgo].label}
-                </span>
-                <span className="text-ink-faint">
-                  {station.ultimaIncidencia ? relativeTime(station.ultimaIncidencia) : "Sin actividad"}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
@@ -627,29 +573,6 @@ function StatBox({
         {value}
         {suffix}
       </p>
-      <p className="text-[10.5px] text-ink-quiet mt-1">{label}</p>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "critical" | "brand" | "neutral";
-}) {
-  const tones = {
-    critical: "text-critical",
-    brand: "text-brand-700",
-    neutral: "text-ink",
-  };
-
-  return (
-    <div className="rounded-xl bg-surface border border-line p-2.5 text-center">
-      <p className={cn("text-[16px] font-bold tabular-nums leading-none", tones[tone])}>{value}</p>
       <p className="text-[10.5px] text-ink-quiet mt-1">{label}</p>
     </div>
   );
